@@ -1,11 +1,11 @@
 grafana:
- namespaceOverride: monitoring
- operator:
-  enabled: true
-  ScanAllNamespaces: true
-  prometheus:
-    serviceMonitor:
-      enabled: true
+  namespaceOverride: monitoring
+  operator:
+    enabled: true
+    scanAllNamespaces: true
+    prometheus:
+      serviceMonitor:
+        enabled: true
   grafana:
     enabled: true
     dashboardLabelSelectors:

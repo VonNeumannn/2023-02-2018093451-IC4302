@@ -9,10 +9,10 @@ metadata:
   labels:
     app: grafana
 spec:
-json: >
+  json: >
 {{ $.Files.Get (printf "dashboards/%s" $value.file) | indent 4 }}
   datasources:
     - inputName: "DS_PROMETHEUS"
       datasourceName: "Prometheus"
-{{- end}}
-{{- end}}
+{{- end }}
+{{- end }}

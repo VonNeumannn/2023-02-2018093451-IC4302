@@ -2,14 +2,14 @@ apiVersion: integreatly.org/v1alpha1
 kind: GrafanaDataSource
 metadata:
   name: prometheus
-  namespace: {{ .Values.prometheus.namespaces }}
+  namespace: {{ .Values.prometheus.namespace }}
 spec:
   name: middleware.yaml
   datasources:
     - name: Prometheus
       type: prometheus
       access: proxy
-      url: http://monitoring-slack-prometheu-prometheus:9090
+      url: http://monitoring-stack-prometheu-prometheus:9090
       isDefault: true
       version: 1
       editable: true

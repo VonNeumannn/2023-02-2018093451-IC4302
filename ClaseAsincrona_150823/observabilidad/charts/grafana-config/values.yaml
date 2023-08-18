@@ -1,7 +1,7 @@
 prometheus:
-  namespace: monitoring.
+  namespace: monitoring
 dashboards:
   mariadb:
     name: mariadb
     file: mariadb.json
-    enabled: true
+    enable: true
