@@ -5,3 +5,19 @@ dashboards:
     name: mariadb
     file: mariadb.json
     enable: true
+  elasticsearch:
+    name: elasticsearch
+    file: elasticsearch.json
+    enable: false
+  mariadb-galera:
+    name: mariadb-galera
+    file: mariadbgal.json
+    enable: false
+  mongodb:
+    name: mongodb
+    file: mongodb.json
+    enable: false
+  postgresql-ha:
+    name: postgresql-ha
+    file: postgresql-ha.json
+    enable: false
