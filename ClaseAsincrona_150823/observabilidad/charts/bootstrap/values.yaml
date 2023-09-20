@@ -3,4 +3,6 @@ namespaces:
   - elastic
   - mongo
   - mysql
+  - postgresql-ha
+  - mariadb-galera
   - monitoring

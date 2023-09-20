@@ -7,7 +7,7 @@ mariadb:
       namespace: "monitoring"
 
 elasticsearch:
-  enabled: true
+  enabled: false
   metrics:
     enabled: true
     serviceMonitor:
@@ -15,7 +15,7 @@ elasticsearch:
       namespace: "monitoring"
 
 mariadb-galera:
-  enabled: true
+  enabled: false
   metrics:
     enabled: true
     serviceMonitor:
@@ -23,7 +23,7 @@ mariadb-galera:
       namespace: "monitoring"
 
 mongodb:
-  enabled: true
+  enabled: false
   metrics:
     enabled: true
     serviceMonitor:
@@ -31,7 +31,7 @@ mongodb:
       namespace: "monitoring"
 
 postgresql-ha:
-  enabled: true
+  enabled: false
   metrics:
     enabled: true
     serviceMonitor:

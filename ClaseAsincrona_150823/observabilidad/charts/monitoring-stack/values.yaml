@@ -13,15 +13,15 @@ grafana:
           app: grafana
     persistence:
       enabled: true
-      size: 5Gi
+      size: 3Gi
 prometheus:
   namespaceOverride: monitoring
   prometheus:
     retention: 2d
     persistence:
       enabled: true
-      size: 5Gi
+      size: 3Gi
     alertmanager:
       persistence:
         enabled: true
-        size: 5Gi
+        size: 3Gi
