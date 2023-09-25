@@ -1,4 +1,4 @@
-FROM arm64v8/python:3.11.5-slim-bullseye
+FROM python:3.11.5-slim-bullseye
 
 EXPOSE 5000
 ENV PYTHONDONTWRITEBYTECODE=1
