@@ -2,9 +2,13 @@ from flask import Flask, jsonify, request
 import oracledb
 from pymongo import MongoClient
 import oci
-from oci.nosql import NosqlClient, models
-
-
+from oci.nosql import NosqlClient
+import sys
+from borneo import NoSQLHandle, NoSQLHandleConfig, PutRequest
+from borneo.iam import SignatureProvider
+import hashlib
+import json
+import datetime
 
 #Constants
 app = Flask(__name__)
@@ -13,6 +17,10 @@ app = Flask(__name__)
 TODO:
 -> Send data to UI
 -> Insert into log DB
+    #el bag_info va el json(log) completo, md5 a todo el doc para el logId
+    #primera busqueda sin facets
+    #iterativo por cada facet
+    #mongo stage
 """
 #Oracle connection
 def dbOracle_connection():
@@ -30,59 +38,74 @@ def dbOracle_connection():
 #Mongo connection
 def dbMongo_connection():
     try:
-        stringConnMongo = MongoClient("mongodb+srv://admin:h99HYgct2cPpgVUwgaXruVY5V@cluster0.b5lzzny.mongodb.net/?retryWrites=true&w=majority")
+        stringConnMongo = MongoClient("mongodb+srv://admin:d10bWGsGGZByJuUw@cluster0.hd2zdo3.mongodb.net/?retryWrites=true&w=majority")
+        #stringConnMongo = MongoClient("mongodb+srv://admin:h99HYgct2cPpgVUwgaXruVY5V@cluster0.b5lzzny.mongodb.net/?retryWrites=true&w=majority")
         db = stringConnMongo["Wikipedia"]
     except Exception as error:
         print(error)
     return db
 #Logs insertion
-def dbLogs():
-    config = {
-    "key_content": """-----BEGIN PRIVATE KEY-----
-MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQCohhfZRsLjgQug
-p3IHTr7xX04nCVGrbWxsC2acv3ub57TmqduMqcpRyMM0TN0xRtE5hPxPs9UvXTRR
-zz4pMogUlIZ2kYU6sLHHL/VVYypnkxmAJRiGvx3gxjLVIzaVZIqUoF17mcnW+G4q
-YB6/fBWrF5WmxxcMbJJx7SL0+KufZ3ix2ezshIcJPjX4lzRMTriXpCpKPOdCmNiW
-EXOfHg2L/LxlCFJA+Cqsoy97RXQYIDuw0LocmjV+JR3aFjMM+okV/LdbRr80sOTZ
-unSlqaJX7VvC2i4+XCZ3GScX8FKLpjsJx6k2BTKwTG3fo5exXYsXGGqaKD+B1atT
-DycAPvsDAgMBAAECggEAN1NahgL0nXLyqcn/JgYEqsJyql8lWEXCuA/gHqrAfnUJ
-z0ZJZTsiyEnESCnJ3lEVBDC0EsiDvxp2wDrs+eJ0iWkfYdKxbgyvOKj2fpNhSwKg
-dxD2pdodiXsYGiAG3fHViyjAuADLok8J/9Bxl8S5amOCRnALEZGdXFiRRuJSmbB5
-lhIwprtuW10/zUfIu7RRtSrVacrgTmvfZyhZaFJdKFlkmMg+DsMg+hGqrke4RyNs
-A2J5UYm/Iorc2aG21Ack3x7Hlkm9E/NWSQEwFKvAOyOKBNxLByUpth77MiPEGRk6
-CXIEeP89Ggl0H13aBG8lz1lM+/lBUY3BEQYaVxqu+QKBgQDrv7PjHEOzl9NdW7Gu
-38ZJtawjA39Me3/L1cHQmjF9udDNQ27rkKPpAZ9VB9AQybQXmV2kfNZUsBoWg++v
-HkaN9t2SJsp8lJbEzHM7ABOk8P716m1aVJL7htjDrAyo5+o3YpS/rmu3bQf6G+4N
-HK8ztxZzX0hmhJbGrxQZAPVKKQKBgQC3AA97dkPAfEFrfgf2ADQOgwNg58zEl1La
-tMjTwMdZjML/L6Ec+mgF2jhhvIcdp6DX18+lSQNdrloKj6F/aH1MDqoUmZmdfcCc
-WbItyq/mWCNoxgtYdMfXv1jIQkl5c+MZUWw0OMIbfsbNn5Lyt9a9SnJLaGsrHsZF
-jLkmrApZSwKBgEIbAk032sAcXbd7A8r+krKOj9NNor+GjeJRcUSWSDRyC1vTgeHq
-MBwhSVVlmHFsreRELB74pn0e2GHh4y7etXgPdjgKSpM+czyB+/naXqfMsCGy97Dx
-sDl5qYTM1Mv0JBgdu4o4VZocp7T5afohRfuhZlk5qaqdmU3jQCZ2v1FpAoGBAJtU
-DtAhmvJnxXOC3yj8FTN4GscHGXSIaQhASPILgGnPI7hMajlZhi/pgM/coOcX4Fs0
-0AggSB4dHko2jcLCIxAKpmyjz5KxKWrMa4OYteMTTsLgzsJ/JR1ISgh40zqmlc1o
-oipVPtTtr7raxnUEe93hsc+1yrkn/u0LvCBKCOKvAoGBALtGclEKdVkShoU/G82n
-4yNi0q5pRuAshgFwb/eDJ8QoV3A26ABxY29MCNGb1Qcz9+CWrsGZQYblGBv+KCj+
-HHo6gzP+wyVO8NqdInNy12Ueqgn37QrXoUdPHiFXoTj1VrTiW0ail9Zd3cspxOFZ
-JNyOgHzvdQI78zC1tLUJETI1
------END PRIVATE KEY-----""",
-    "user": "ocid1.user.oc1..aaaaaaaashik7hmu6usm4tpruwrubbs6h6e5lyix6lcu67odiuc7vbfcvotq",
-    "fingerprint": "8f:34:1c:92:df:13:5c:1b:f2:b2:b6:9f:75:27:9a:55",
-    "tenancy": "ocid1.tenancy.oc1..aaaaaaaaazrw3t5sa6dacgzzh573u763zxazhcnve2ndfdgaebwgh6dxlptq",
-    "region": "us-ashburn-1"
-    }
-    oci.config.validate_config(config)
-    nosql_client = NosqlClient(config)
-    log_entry = {
-        "title":"prueba",
-        "bagInfo":""
-    }
+def dbLogs(title, timeStamp):
+    private_key = """-----BEGIN PRIVATE KEY-----
+MIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQCyeqoVhQp5uJUk
+R5/E1gqkckWVDk91rbYmJurpooXp2k98PZNPtrfz0ojtUiwEotBR9theADGuLLsY
+E2tAj2jvqDoKofReMGjbk4BD+gIrlyfIRHTUdCTWfxY4dBG18i3pNB7alzbFxOv2
+/V97iMdl4JYHL5MdWa3O7W+ILIgWgePIctD0iv2zObiBrZkBA0nCda42ordr5Srw
+mrkCyr1DMCJJeiaFweGu6L193nOkI2FW33NUpd8MzuK3Euj4YJKCj9GlyfEtEJ9M
+sG8VWehk79kamgtgnP/hdWQbLCyh4u4qzaZQDJGtjGHeIJ+qGHYffxRGt0i4jHfW
+AT5cBcpDAgMBAAECggEAV+ZSouORa64tAZ+mv4Xc2u2OeGECYEYLydFr62HICwqi
+D+GxjdZC1XnQRvUryaK3704fdHgq/4l3IV3a+gJHH5Td9QObOtIjqlSEHLZh4D8C
+8D5KvaFvzRXtByOe31llJA+vzF8hshgQUGWr40bTUUjhCqvzC8bxc1J7lfi8kzxV
+t2JCdgHdgcRN/ZnBsqTM9LZcrUkDNz3FR0jVjUYaBSLA0r+NEzjAJ2tvbOIxkgPQ
+MK1GGnc0fotMBmSbrIzYXRaNeH2fCRu6v6oUtNbkOgV7i7wAhrIw9YQi1RMbOGyg
+qYV/Htk2oN0gbgpWlX+G49ET4aAkCDiVsQQB0CI4xQKBgQDYNEihwFDyt0PX+P3l
+Y5LOUV3z5DYjD+Eh09o3EW5iSanA0QJ4gIBmoZ6qc1aR4M4w7sQZ9XLxVFkDI5wK
+jvYQSYGup5u5cdQa5YL8MuysPtw/3JFgLeE2JXwBEyjUWMaIZ/6mezJdy4sYOQ4u
+OnuiHk8Y+1dDoay30JLF4NtVHQKBgQDTVL611KNYTJLLj1bAdvrOYo5FvHVbDnlQ
+Z2PhmXN9N4jxZBi1tDajq+wFMr0I9GfaqubnbjPsn8BpqEuXGEDRTt0LXmFtUIc+
+oXmkt/Dml7qWUV7Sfjk5Exaz5yAvcDPOeZiOfvjESlp1dfwZY9t3wUai44Eg5/Zi
+GppeYq5e3wKBgDvVVFh3Wa+iKkNl5BYMlX9Fo2Owv466gUqUT6q3xz2qNzFmZnGk
+1mQQzFFNtCKQ/V8rZNfuRo4lErE8tJ1zbQOa5CnKttz+dH2xEKvtB/SvPNLrnsvo
+RpBulT/S5pTFsMPlS+MU6x5sCyV7/MGsa7S1AJzgSgksgBkqvsPGc8y9AoGAJROX
+KfuWdOVqU8BgLgAx3Ie6Ak4gIMuXSR36jhgIBQ37Pq6bDzYA6BI/pGHUfH+0wM5/
+GFdjUL5uWZsnN+kPZil56oayfSVFtR1LZDTJVQuFtt2rzy5KB9NrhkCkiu4aiL0Y
+oNdx+a451KXQhvvYA1irdeSIQSexOGEGeEzD3u0CgYAV2F1lWiOBNMxZ2bNSt8Lw
+lO0I1+CFfFCOulEPrMBk5De6akzVS9JT9lGxtQ2fHVtf+3IqnTz69j0WRvD4lYgX
+phlZ2+9xGUxOrHdnzol50f/lQ0TmHM920nTp1XChosWS9vqUFE6OEYpNgQMkcFda
+rvLR0LOLOhVbGpy/8zzQ/w==
+-----END PRIVATE KEY-----"""
+    user =  "ocid1.user.oc1..aaaaaaaashik7hmu6usm4tpruwrubbs6h6e5lyix6lcu67odiuc7vbfcvotq"
+    fingerprint = "06:25:27:f2:e2:81:c8:f2:18:9e:8a:d1:65:8c:5b:4d"
+    tenancy = "ocid1.tenancy.oc1..aaaaaaaaazrw3t5sa6dacgzzh573u763zxazhcnve2ndfdgaebwgh6dxlptq"
+    region = "us-ashburn-1"
 
-    insert_request = nosql_client.put_row(
-        table_name = "ic4302_logs",
-        value = log_entry
-    )
-    return insert_request
+    provider = SignatureProvider(tenant_id=tenancy,
+                                 user_id=user,
+                                 fingerprint=fingerprint,
+                                 private_key=private_key,
+                                 pass_phrase=None)
+
+    nosql_handle = NoSQLHandle(NoSQLHandleConfig(region,provider))
+    #Definir lo que se va a insertar
+    table_name = "ic4302_logs"
+    log_entry = {
+        "title":title,
+        "timeStamp":timeStamp
+        }
+        
+    #obtengo un valor único para el id
+    encoded_entry = json.dumps(log_entry)
+    hashed_entry = hashlib.md5(encoded_entry.encode()).hexdigest()
+    final_log = {
+        "logId":hashed_entry,
+        "title":title,
+        "bagInfo":log_entry,
+        "timeStamp" : timeStamp}
+    #Se realiza la insercion
+    rq = PutRequest().set_table_name(table_name)
+    rq.set_value(final_log)
+    nosql_handle.put(rq)
+
 
 #Queries
 @app.route("/login", methods=['GET'])
@@ -95,17 +118,21 @@ def search():
     #Se obtienen los parametros
     stringBusqueda = '%'+request.args.get('stringBusqueda')+'%'
     tipoRecurso = request.args.get('tipoRecurso')
-    dbLogs()
     #Comprobamos el tipo de DB
     if (int(tipoRecurso) == 1):
         #Autonomous DB
         conn = dbOracle_connection()
         cursor = conn.cursor()
+        #Log
+        date_time = datetime.datetime.now()
+        timeStamp = date_time.strftime("%Y-%m-%dT%H:%M:%S")
+        title = "Siuuuu"
+        dbLogs(title,timeStamp)
         try:
         #Request
-            sql = f"""SELECT P.IDPAGINA, P.TITULO
-                    FROM PAGINA P
-                    WHERE TITULO
+            sql = f"""SELECT P.PageId, P.Title
+                    FROM Page P
+                    WHERE Title
                     LIKE '{stringBusqueda}'
                     """
             cursor.execute(sql)
@@ -118,8 +145,12 @@ def search():
                 }
                 pages.append(result_dict)
             if len(pages) != 0:
+                title + "Search exitoso"
+                dbLogs(title,timeStamp)
                 return jsonify(pages), 200
             else:
+                title + "Search fallido"
+                dbLogs(title,timeStamp)
                 return "Not found", 404
         except Exception as e:
             print(f"Error: {str(e)}")
@@ -129,6 +160,9 @@ def search():
         #Mongo DB
         conn = dbMongo_connection()
         collection = conn["PAGINA"]
+        #logs
+        timeStamp = datetime.datetime.now()
+        title = ""
         try:
             #Busqueda por patrones
             documents = collection.find({"TITULO":{"$regex":stringBusqueda,"$options": "i"}})
@@ -140,8 +174,12 @@ def search():
                 }
                 pages.append(result_dict)
             if len(pages) != 0:
+                title + "Search exitoso"
+                dbLogs(title,timeStamp)
                 return jsonify(pages), 200
             else:
+                title + "Search fallido"
+                dbLogs(title,timeStamp)
                 return "Not found", 404
         except Exception as e:
             print(f"Error: {str(e)}")
@@ -152,6 +190,9 @@ def showDocument():
     #Obtiene los parametros
     idDocument = request.args.get('idDocument')
     tipoRecurso = request.args.get('tipoRecurso')
+    #logs
+    timeStamp = datetime.datetime.now()
+    title = ""
     #Comprueba el tipo de DB
     if (int(tipoRecurso) == 1):
         #Autonomous DB
@@ -169,8 +210,12 @@ def showDocument():
             for r in rows:
                 document = r
             if document is not None:
+                title + "Search exitoso"
+                dbLogs(title,timeStamp)
                 return jsonify(document), 200
             else:
+                title + "Search fallido"
+                dbLogs(title,timeStamp)
                 return "Not found", 404
         except Exception as e:
             print(f"Error: {str(e)}")
@@ -180,6 +225,9 @@ def showDocument():
         #Mongo DB
         conn = dbMongo_connection()
         collection = conn["PAGINA"]
+        #logs
+        timeStamp = datetime.datetime.now()
+        title = ""
         try:
             #Muestra la pagina según el id
             documents = collection.find_one({"IDPAGINA":idDocument})
@@ -188,12 +236,15 @@ def showDocument():
             for doc in documents:
                 page = doc
             if page is not None:
+                title + "Search exitoso"
+                dbLogs(title,timeStamp)
                 return jsonify(page), 200
             else:
+                title + "Search fallido"
+                dbLogs(title,timeStamp)
                 return "Not found", 404
         except Exception as e:
             print(f"Error: {str(e)}")
-
 
 # Main
 if __name__ == '__main__':

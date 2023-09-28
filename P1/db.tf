@@ -10,7 +10,7 @@ resource "oci_database_autonomous_database" "autonomous_database" {
 
 resource "oci_nosql_table" "logs_table" {
     compartment_id = var.compartment_id
-    ddl_statement = "CREATE TABLE if not exists ${var.db_name}_logs (logId INTEGER, title STRING, bagInfo JSON, PRIMARY KEY (logId))"
+    ddl_statement = "CREATE TABLE IF NOT EXISTS ic4302_logs(logId STRING, title STRING, bagInfo JSON, timeStamp TIMESTAMP(3), PRIMARY KEY(SHARD(logId)))"
     name = "${var.db_name}_logs"
     table_limits {
 	max_storage_in_gbs = 1
