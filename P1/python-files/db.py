@@ -9,6 +9,7 @@ from borneo.iam import SignatureProvider
 import hashlib
 import json
 import datetime
+import certifi
 
 #Constants
 app = Flask(__name__)
@@ -37,13 +38,15 @@ def dbOracle_connection():
     return conn
 #Mongo connection
 def dbMongo_connection():
+    ca = certifi.where()
     try:
-        stringConnMongo = MongoClient("mongodb+srv://admin:d10bWGsGGZByJuUw@cluster0.hd2zdo3.mongodb.net/?retryWrites=true&w=majority")
+        stringConnMongo = MongoClient("mongodb+srv://admin:d10bWGsGGZByJuUw@cluster0.hd2zdo3.mongodb.net/?retryWrites=true&w=majority", tlsCAFile=ca)
         #stringConnMongo = MongoClient("mongodb+srv://admin:h99HYgct2cPpgVUwgaXruVY5V@cluster0.b5lzzny.mongodb.net/?retryWrites=true&w=majority")
         db = stringConnMongo["Wikipedia"]
     except Exception as error:
         print(error)
     return db
+
 #Logs insertion
 def dbLogs(title, timeStamp):
     private_key = """-----BEGIN PRIVATE KEY-----
@@ -106,34 +109,23 @@ rvLR0LOLOhVbGpy/8zzQ/w==
     rq.set_value(final_log)
     nosql_handle.put(rq)
 
-
-#Queries
-@app.route("/login", methods=['GET'])
-def validarUser():
-    pass
-
 #Search by title
 @app.route("/search", methods=['GET'])
 def search():
     #Se obtienen los parametros
-    stringBusqueda = '%'+request.args.get('stringBusqueda')+'%'
     tipoRecurso = request.args.get('tipoRecurso')
     #Comprobamos el tipo de DB
     if (int(tipoRecurso) == 1):
+        stringBusqueda = '%'+request.args.get('stringBusqueda')+'%'
         #Autonomous DB
         conn = dbOracle_connection()
         cursor = conn.cursor()
         #Log
         date_time = datetime.datetime.now()
         timeStamp = date_time.strftime("%Y-%m-%dT%H:%M:%S")
-        title = "Siuuuu"
-        dbLogs(title,timeStamp)
         try:
         #Request
-            sql = f"""SELECT P.PageId, P.Title
-                    FROM Page P
-                    WHERE Title
-                    LIKE '{stringBusqueda}'
+            sql = f"""EXEC ADMIN.BUSCAQUEDAGENERAL '{stringBusqueda}',0
                     """
             cursor.execute(sql)
             rows = cursor.fetchall()
@@ -153,36 +145,60 @@ def search():
                 dbLogs(title,timeStamp)
                 return "Not found", 404
         except Exception as e:
-            print(f"Error: {str(e)}")
+            return(f"Error: {str(e)}")
         finally:
             conn.close()
     else:
+        stringBusqueda = request.args.get('stringBusqueda')
         #Mongo DB
         conn = dbMongo_connection()
-        collection = conn["PAGINA"]
+        collection = conn["Pages"]
         #logs
-        timeStamp = datetime.datetime.now()
+        date_time = datetime.datetime.now()
+        timeStamp = date_time.strftime("%Y-%m-%dT%H:%M:%S")
         title = ""
         try:
+            queryMongo = {
+                        "$or": [
+                            {"Title": {"$regex": stringBusqueda, "$options": "i"}},
+                            {"LastRevisionData.Text.NormalText": {"$regex": stringBusqueda, "$options": "i"}},
+                            {"Restrictions": {"$regex": stringBusqueda, "$options": "i"}},
+                            {"Links": {"$elemMatch": {"$regex": stringBusqueda, "$options": "i"}}}
+                        ]}
             #Busqueda por patrones
-            documents = collection.find({"TITULO":{"$regex":stringBusqueda,"$options": "i"}})
+            documents = collection.find()
             pages = []
+            i = 0
             for doc in documents:
                 result_dict = {
-                'IDPAGINA': doc[1],
-                'TITULO': doc[2]
+                "Title": doc["Title"],
+                "NormalText": doc["LastRevisionData"]["Text"]["NormalText"]
                 }
                 pages.append(result_dict)
+                i+=1
+            print(i)
+            # Para obtener los facets
+            """
+            facetsSelected = ["Namespace", "Redirect", "PageHasRedirect", "Restrictions",
+                            "SiteInfoName", "SiteInfoDBName", "SiteLaguage", "PageLastModified",
+                            "PageLastModifiedUser",  "PageBytes", "PageNumberLinks"]
+            facets = {}
+            for select in facetsSelected:
+                pipeline = [{"$match": queryMongo},  # Aplicar el mismo filtro de búsqueda
+                            {"$group": {"_id": f"${select}", "count": {"$sum": 1}}}]
+                resultFacets = list(collection.aggregate(pipeline))
+                facets[select] = resultFacets
+            """
             if len(pages) != 0:
                 title + "Search exitoso"
                 dbLogs(title,timeStamp)
-                return jsonify(pages), 200
+                return jsonify(pages), 200 #AQUI debería enviar los facets tambien
             else:
                 title + "Search fallido"
                 dbLogs(title,timeStamp)
                 return "Not found", 404
         except Exception as e:
-            print(f"Error: {str(e)}")
+            return(f"Error: {str(e)}")
 
 #See Document
 @app.route("/document", methods=['GET'])
@@ -191,7 +207,8 @@ def showDocument():
     idDocument = request.args.get('idDocument')
     tipoRecurso = request.args.get('tipoRecurso')
     #logs
-    timeStamp = datetime.datetime.now()
+    date_time = datetime.datetime.now()
+    timeStamp = date_time.strftime("%Y-%m-%dT%H:%M:%S")
     title = ""
     #Comprueba el tipo de DB
     if (int(tipoRecurso) == 1):
@@ -218,7 +235,7 @@ def showDocument():
                 dbLogs(title,timeStamp)
                 return "Not found", 404
         except Exception as e:
-            print(f"Error: {str(e)}")
+            return(f"Error: {str(e)}")
         finally:
             conn.close()
     else:
@@ -226,7 +243,8 @@ def showDocument():
         conn = dbMongo_connection()
         collection = conn["PAGINA"]
         #logs
-        timeStamp = datetime.datetime.now()
+        date_time = datetime.datetime.now()
+        timeStamp = date_time.strftime("%Y-%m-%dT%H:%M:%S")
         title = ""
         try:
             #Muestra la pagina según el id
@@ -244,7 +262,7 @@ def showDocument():
                 dbLogs(title,timeStamp)
                 return "Not found", 404
         except Exception as e:
-            print(f"Error: {str(e)}")
+            return(f"Error: {str(e)}")
 
 # Main
 if __name__ == '__main__':
