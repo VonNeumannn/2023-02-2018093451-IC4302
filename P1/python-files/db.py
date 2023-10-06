@@ -150,6 +150,8 @@ def search():
             conn.close()
     else:
         stringBusqueda = request.args.get('stringBusqueda')
+        #facetsParams = request.args.get('facets')
+        facetsParams = ["Language"]
         #Mongo DB
         conn = dbMongo_connection()
         collection = conn["Pages"]
@@ -158,45 +160,53 @@ def search():
         timeStamp = date_time.strftime("%Y-%m-%dT%H:%M:%S")
         title = ""
         try:
-            queryMongo = {
-                        "$or": [
-                            {"Title": {"$regex": stringBusqueda, "$options": "i"}},
-                            {"LastRevisionData.Text.NormalText": {"$regex": stringBusqueda, "$options": "i"}},
-                            {"Restrictions": {"$regex": stringBusqueda, "$options": "i"}},
-                            {"Links": {"$elemMatch": {"$regex": stringBusqueda, "$options": "i"}}}
-                        ]}
-            #Busqueda por patrones
-            documents = collection.find()
-            pages = []
-            i = 0
-            for doc in documents:
-                result_dict = {
-                "Title": doc["Title"],
-                "NormalText": doc["LastRevisionData"]["Text"]["NormalText"]
+            #Busqueda general
+
+            query = [{"$search":{
+                "index":"default",
+                "text":{
+                    "path":["Title","LastRevisionData.Text.NormalText",
+                            "LastRevisionData.User.username",
+                            "LastRevisionData.Text.Redirect",
+                            "Restrictions",
+                            "Links"
+                            ],
+                    "query": stringBusqueda
+                },
+                "highlight":{
+                    "path":"LastRevisionData.Text.NormalText"
+                },
+                "count":{
+                    "type": "total"
                 }
-                pages.append(result_dict)
-                i+=1
-            print(i)
-            # Para obtener los facets
-            """
-            facetsSelected = ["Namespace", "Redirect", "PageHasRedirect", "Restrictions",
-                            "SiteInfoName", "SiteInfoDBName", "SiteLaguage", "PageLastModified",
-                            "PageLastModifiedUser",  "PageBytes", "PageNumberLinks"]
-            facets = {}
-            for select in facetsSelected:
-                pipeline = [{"$match": queryMongo},  # Aplicar el mismo filtro de búsqueda
-                            {"$group": {"_id": f"${select}", "count": {"$sum": 1}}}]
-                resultFacets = list(collection.aggregate(pipeline))
-                facets[select] = resultFacets
-            """
-            if len(pages) != 0:
-                title + "Search exitoso"
-                dbLogs(title,timeStamp)
-                return jsonify(pages), 200 #AQUI debería enviar los facets tambien
-            else:
-                title + "Search fallido"
-                dbLogs(title,timeStamp)
-                return "Not found", 404
+            }
+            },
+            {
+              "$project": {
+                "description": 1,
+                "_id": 0,
+                "highlights": { "$meta": "searchHighlights" }
+                }
+            }
+            ]
+            results = list(collection.aggregate(query))
+            pages = []
+            for doc in results:
+                print(doc)
+                #result_dict = {
+                #"Title": doc["Title"],
+                #"NormalText": doc["LastRevisionData"]["Text"]["NormalText"]
+                #}
+                pages.append(doc)
+            return pages
+            #if len(pages) != 0:
+            #    title + "Search exitoso"
+            #    dbLogs(title,timeStamp)
+            #    return jsonify(pages), 200 #AQUI debería enviar los facets tambien
+            #else:
+            #    title + "Search fallido"
+            #    dbLogs(title,timeStamp)
+            #    return "Not found", 404
         except Exception as e:
             return(f"Error: {str(e)}")
 
