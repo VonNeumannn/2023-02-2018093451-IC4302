@@ -1,9 +1,6 @@
 from flask import Flask, jsonify, request
 import oracledb
 from pymongo import MongoClient
-import oci
-from oci.nosql import NosqlClient
-import sys
 from borneo import NoSQLHandle, NoSQLHandleConfig, PutRequest
 from borneo.iam import SignatureProvider
 import hashlib
@@ -163,11 +160,10 @@ def search():
             #Busqueda general
 
             query = [{"$search":{
-                "index":"default",
                 "text":{
                     "path":["Title","LastRevisionData.Text.NormalText",
                             "LastRevisionData.User.username",
-                            "LastRevisionData.Text.Redirect",
+                            "LastRevisionData.Redirect",
                             "Restrictions",
                             "Links"
                             ],
@@ -183,13 +179,32 @@ def search():
             },
             {
               "$project": {
-                "description": 1,
                 "_id": 0,
-                "highlights": { "$meta": "searchHighlights" }
+                "Title": 1,
+                "score": { "$meta": "searchScore" },
+                "highlights": { "$meta": "searchHighlights" },
                 }
             }
             ]
-            results = list(collection.aggregate(query))
+            queryFacets = [
+                {
+                    "$searchMeta": {
+                        "index":"default",
+                        "facet": {
+                            "facets": {
+                                "Title": {
+                                    "type":"string",
+                                    "path":"Title"
+                                }
+                            }
+                        }
+                    }
+                }
+            ]
+            #collection.create_index([
+            #    ("Title", "stringFacet")
+            #])
+            results = list(collection.aggregate(queryFacets))
             pages = []
             for doc in results:
                 print(doc)
