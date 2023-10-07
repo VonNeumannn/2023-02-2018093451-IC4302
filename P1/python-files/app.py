@@ -6,6 +6,7 @@ from borneo.iam import SignatureProvider
 import hashlib
 import json
 import datetime
+from datetime import datetime
 import certifi
 
 #Constants
@@ -118,7 +119,7 @@ def search():
         conn = dbOracle_connection()
         cursor = conn.cursor()
         #Log
-        date_time = datetime.datetime.now()
+        date_time = datetime.now()
         timeStamp = date_time.strftime("%Y-%m-%dT%H:%M:%S")
         try:
         #Request
@@ -148,12 +149,13 @@ def search():
     else:
         stringBusqueda = request.args.get('stringBusqueda')
         #facetsParams = request.args.get('facets')
-        facetsParams = ["Language"]
+        #facetsParams = [{"nombre": "NumberLinks", "valor": 50}]
+        facetsParams = []
         #Mongo DB
         conn = dbMongo_connection()
         collection = conn["Pages"]
         #logs
-        date_time = datetime.datetime.now()
+        date_time = datetime.now()
         timeStamp = date_time.strftime("%Y-%m-%dT%H:%M:%S")
         title = ""
         try:
@@ -189,39 +191,131 @@ def search():
             queryFacets = [
                 {
                     "$searchMeta": {
-                        "index":"default",
+                        "index":"full_text",
                         "facet": {
                             "facets": {
-                                "Title": {
-                                    "type":"string",
-                                    "path":"Title"
+                                "PageBytes": {
+                                    "type":"number",
+                                    "path":"LastRevisionData.PageBytes",
+                                    "boundaries": [0, 1000, 10000, 50000],
+                                    "default": "other"
+                                    },
+                                "LastRevisionData.Redirect": {
+                                    "type": "string",
+                                    "path": "LastRevisionData.Redirect"
+                                },
+                                "LastRevisionData.RevisionDate": {
+                                    "type": "date",
+                                    "path": "LastRevisionData.RevisionDate",
+                                    "boundaries": [datetime.strptime("2000-01-01T00:00:00.000Z", "%Y-%m-%dT%H:%M:%S.%fZ"),
+                                                    datetime.strptime("2005-01-01T00:00:00.000Z", "%Y-%m-%dT%H:%M:%S.%fZ"),
+                                                    datetime.strptime("2015-01-01T00:00:00.000Z", "%Y-%m-%dT%H:%M:%S.%fZ"),
+                                                    datetime.strptime("2023-01-10T00:00:00.000Z", "%Y-%m-%dT%H:%M:%S.%fZ")],
+                                    "default": "other"
+                                },
+                                "LastRevisionData.User.username": {
+                                    "type": "string",
+                                    "path": "LastRevisionData.User.username"
+                                },
+                                "Links": {
+                                    "type": "string",
+                                    "path": "Links"
+                                },
+                                "Namespace": {
+                                    "type": "string",
+                                    "path": "Namespace"
+                                },
+                                "NumberLinks": {
+                                    "type": "number",
+                                    "path": "NumberLinks",
+                                    "boundaries": [0, 10, 50, 100],
+                                    "default": "other"
+                                },
+                                "Restrictions": {
+                                    "type": "string",
+                                    "path": "Restrictions"
+                                },
+                                "SiteDBName": {
+                                    "type": "string",
+                                    "path": "SiteDBName"
+                                },
+                                "SiteLanguage": {
+                                    "type": "string",
+                                    "path": "SiteLanguage"
+                                },
+                                "SiteName": {
+                                    "type": "string",
+                                    "path": "SiteName"
+                                },
+                                "WikipediaLink": {
+                                    "type": "string",
+                                    "path": "WikipediaLink"
                                 }
                             }
-                        }
+                        }   
                     }
                 }
             ]
-            #collection.create_index([
-            #    ("Title", "stringFacet")
-            #])
-            results = list(collection.aggregate(queryFacets))
-            pages = []
-            for doc in results:
-                print(doc)
-                #result_dict = {
-                #"Title": doc["Title"],
-                #"NormalText": doc["LastRevisionData"]["Text"]["NormalText"]
-                #}
-                pages.append(doc)
-            return pages
-            #if len(pages) != 0:
-            #    title + "Search exitoso"
-            #    dbLogs(title,timeStamp)
-            #    return jsonify(pages), 200 #AQUI debería enviar los facets tambien
-            #else:
-            #    title + "Search fallido"
-            #    dbLogs(title,timeStamp)
-            #    return "Not found", 404
+            if len(facetsParams) == 0:
+                resultsGeneral = list(collection.aggregate(query))
+                resultsFacets = list(collection.aggregate(queryFacets))
+                resultsGeneral.append(resultsFacets)
+                pages = []
+                for doc in resultsGeneral:
+                    pages.append(doc)
+                if len(pages) != 0:
+                    title + "Search exitoso"
+                    dbLogs(title,timeStamp)
+                    return pages, 200 #AQUI debería enviar los facets tambien
+                else:
+                    title + "Search fallido"
+                    dbLogs(title,timeStamp)
+                    return "Not found", 404
+            else:
+                query2 = [{"$search":{
+                "text":{
+                    "path":["Title","LastRevisionData.Text.NormalText",
+                            "LastRevisionData.User.username",
+                            "LastRevisionData.Redirect",
+                            "Restrictions",
+                            "Links"
+                            ],
+                    "query": stringBusqueda
+                },
+                "highlight":{
+                    "path":"LastRevisionData.Text.NormalText"
+                },
+                "count":{
+                    "type": "total"
+                }
+            }
+            },
+            {
+                "$facet": {}
+            },
+            {
+              "$project": {
+                "_id": 0,
+                "Title": 1,
+                "score": { "$meta": "searchScore" },
+                "highlights": { "$meta": "searchHighlights" },
+                }
+            }
+            ]
+                # Agregar los facets al pipeline
+                for facet in facetsParams: 
+                    nameFacet = facet["nombre"]
+                    valueFacet = facet["valor"]
+                    query2[1]["$facet"][nameFacet] = [
+                        {
+                            "$match": {nameFacet: valueFacet}
+                        },
+                        {
+                            "$count": "total"
+                        }
+                    ]
+                resultWithFacets = list(collection.aggregate(query))
+                return resultWithFacets, 200
         except Exception as e:
             return(f"Error: {str(e)}")
 
@@ -232,7 +326,7 @@ def showDocument():
     idDocument = request.args.get('idDocument')
     tipoRecurso = request.args.get('tipoRecurso')
     #logs
-    date_time = datetime.datetime.now()
+    date_time = datetime.now()
     timeStamp = date_time.strftime("%Y-%m-%dT%H:%M:%S")
     title = ""
     #Comprueba el tipo de DB
@@ -268,7 +362,7 @@ def showDocument():
         conn = dbMongo_connection()
         collection = conn["PAGINA"]
         #logs
-        date_time = datetime.datetime.now()
+        date_time = datetime.now()
         timeStamp = date_time.strftime("%Y-%m-%dT%H:%M:%S")
         title = ""
         try:
