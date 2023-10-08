@@ -16,7 +16,6 @@ export default function Login() {
     const handleAccess = () => {
         const email = document.getElementById('email-text').value;
         const password = document.getElementById('password-input').value;
-        console.log(email+" + "+password)
 
         const apiUrl = 'http://127.0.0.1:5000/login';
 
@@ -29,18 +28,18 @@ export default function Login() {
         // Realizar la solicitud POST
         axios.post(apiUrl, data)
             .then(response => {
-            console.log(response)
-            if (response.status) {
+            if (response.data.status) {
                 navigate('/search')
-
-
             } else {
-                alert(response.message)
+                alert(response.data.message)
             }
         })
         .catch(error => {
             // Si ocurre un error en la solicitud
-            console.error('Error en la solicitud:', error);
+            //console.error('Error en la solicitud:', error);
+            //console.error('Error en la solicitud:', error);
+            //console.error('Error en la solicitud:', error);
+            alert(JSON.parse(error.request.response).message)
           });
     }
 

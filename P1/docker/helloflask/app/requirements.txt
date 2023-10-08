@@ -1,1 +1,7 @@
 flask
+oracledb
+pymongo
+borneo
+certifi
+firebase-admin==5.5.2  # Asegúrate de especificar la versión correcta
+google-cloud-firestore==2.5.2  # Asegúrate de especificar la versión correcta
