@@ -18,7 +18,7 @@ from google.cloud.firestore_v1.base_query import FieldFilter
 #Constants
 app = Flask(__name__)
 # Configura CORS para toda la aplicación
-cors = CORS(app, resources={r"/*": {"origins": "http://localhost:5000"}})
+CORS(app)
 
 
 """
@@ -143,10 +143,11 @@ connFire = firebaseConnection()
 @app.route("/register", methods=['POST'])
 def register():
     if request.method == 'POST':
-        name = request.form.get('name')
-        lastName = request.form.get('lastName')
-        email = request.form.get('email')
-        password = request.form.get('password')
+        jsonCred = request.get_json()
+        name = jsonCred["name"]
+        lastName = jsonCred["lastName"]
+        email = jsonCred["email"]
+        password = jsonCred["password"]
 
         #agrega un nuevo documento a la coleccion usuarios
         connFire.collection("users").add({
@@ -155,16 +156,16 @@ def register():
             "email" : f"{email}",
             "password" : f"{password}"
         })
-        return jsonify({"message":f"{name},registrado existosamente",
+        return jsonify({"message":"Registrado existosamente",
                         "status":True}), 201
 
 #Login
 @app.route("/login", methods=['POST'])
 def login():
     if request.method == 'POST':
-        email = request.form.get('email')
-        password = request.form.get('password')
-        
+        jsonCred = request.get_json()
+        email = jsonCred["email"]
+        password = jsonCred["password"]
         # Create a reference to the cities collection
         users = connFire.collection("users")
         # Create a query against the collection
@@ -177,19 +178,16 @@ def login():
         user = None
         for doc in docs:
             user = doc.to_dict()
+            
         try:
-            print(user)
             if (user == None):
-                print("Siuiuuuuu")
                 return jsonify({"message":"Usuario no encontrado",
                             "status": 0}), 404
             else:
                 if (user['password'] == password):
-                    print("Siuiuuuuu")
                     return jsonify({"message":f"{user['name']},logueado existosamente",
                                     "status":1})
                 else:
-                    print("Siuiuuuuu")
                     return jsonify({"message":f"correo o contraseña incorrecta",
                                 "status":0})
         except Exception as e:
