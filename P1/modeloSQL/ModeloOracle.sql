@@ -59,11 +59,11 @@ CREATE TABLE "LastRevision" (
 "Revision_id" INT PRIMARY KEY,
 "wikiUserId" INT,
 FOREIGN KEY ("wikiUserId") REFERENCES "wikiUser"("userId"),
-"RevisionWikiText" CLOB,
+"RevisionWikiText" VARCHAR2(4000),
 "Redirect" VARCHAR2(1000),
 "PageBytes" INT,
 "RevisionDate" DATE,
-"RevisionCleanText" CLOB,
+"RevisionCleanText" VARCHAR2(4000),
 "PageId" INT,
 FOREIGN KEY ("PageId") REFERENCES "Page"("Pageid")
 );
