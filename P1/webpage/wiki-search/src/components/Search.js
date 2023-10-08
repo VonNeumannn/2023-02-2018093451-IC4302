@@ -12,6 +12,7 @@ export default function Search() {
   var somethingSearched = false;
   var tipoDB;
   const [array, setArray] = useState([]);
+  const [arrayFacets, setArrayFacets] = useState([]);
   
   const OnClickHandler = () => {
     
@@ -45,7 +46,9 @@ export default function Search() {
         .get(apiUrl)
         .then((response) => {
           if (response.status) {
+            console.log(response.data[1][0].facet)
             setArray(response.data[0]);
+            setArrayFacets(response.data[1][0].facet)
             mensajeError.textContent = ""
           } else {
             alert("holi 1");
@@ -82,7 +85,7 @@ export default function Search() {
     return partes;
   }
   
-
+//////////////DOCUMENTS
   useEffect(() => {
     if (array.length > 0) {
       const search = document.getElementById("searching").value;
@@ -107,6 +110,7 @@ export default function Search() {
               text={array[i].highlights[0].texts}
               searched = {search}
               database = {tipoDB}
+              
             />
           );
         } catch (error) {
@@ -123,6 +127,58 @@ export default function Search() {
       }
     }
   }, [array]);
+
+
+ /////////////////FACETS
+ useEffect(() => {
+  console.log("Quiero ser el rey");
+  console.log(arrayFacets)
+  if (Object.keys(arrayFacets).length > 0) {
+    const search = document.getElementById("searching").value;
+    let daysHTML = [];
+    let tipoDB = ""; // Declarar tipoDB antes de usarlo
+
+    const radios = document.getElementsByName("opcion");
+
+    // Iterar a través de los elementos de radio para encontrar el seleccionado
+    for (const radio of radios) {
+      if (radio.checked) {
+        tipoDB = radio.value;
+        break; // Salir del bucle cuando se encuentre el seleccionado
+      }
+    }
+
+    // Iterar sobre las propiedades del objeto arrayFacets
+    for (const clave in arrayFacets) {
+      if (arrayFacets.hasOwnProperty(clave)) {
+        console.log("Nombre de la clave:", clave);
+        console.log("Valores:");
+        const valoresInternos = arrayFacets[clave].buckets;
+        console.log(valoresInternos)
+        daysHTML.push(
+          <Facet
+            name={clave}
+            options={valoresInternos}
+            searched={search}
+            database={tipoDB}
+          />
+        );
+      }
+    }
+
+    // Renderizar el componente solo si hay datos en el array
+    if (daysHTML.length > 0) {
+      const root = createRoot(containerRef.current);
+      root.render(<>{daysHTML}</>);
+    }
+  }
+
+  console.log("HOLIIIIIIIIIII FACETS");
+}, [arrayFacets]);
+
+
+
+  
 
   useEffect(() => {
     const inputElement = document.getElementById('searching');

@@ -2,75 +2,70 @@ import React, { useEffect, useState } from "react";
 import axios from 'axios'
 
 export default function DocumentComplete() {
-    const [string, setString] = useState("");
-        // Obtiene la URL actual del navegador
-const urlActual = window.location.href;
 
-// Divide la URL en partes usando '/' como separador y toma la última parte
-const partesDeLaURL = urlActual.split('/');
-const ultimaParteDeLaURL = partesDeLaURL.pop();
-const titulo = ultimaParteDeLaURL.split('&')[0];
-const base = ultimaParteDeLaURL.split('&')[1];
-console.log(ultimaParteDeLaURL);
-    function resaltarFrase(texto, frase) {
-        try {
-            const expresionRegular = new RegExp(frase, 'gi'); // Agregar 'i' para hacerlo no case-sensitive
-    
-            // Reemplazamos todas las ocurrencias de la frase con la frase rodeada por las etiquetas <mark>
-            const textoResaltado = texto.replace(expresionRegular, "<mark>$&</mark>");
-    
-            return textoResaltado;
-        } catch (err) {
-            console.log(err);
-            return texto;
-        }
-    }
-    
-    const apiUrl =
-    "http://127.0.0.1:5000/document?titulo=" +
-    titulo.replace(/-/g, " ") +
-    "&tipoRecurso=" +
-    base;
-
-  //Realizar la solicitud POST
-  axios
-    .get(apiUrl)
-    .then((response) => {
-      if (response.status) {
-        setString(response.data);
-        
-      } else {
-        alert("holi 1");
-      }
-    })
-    .catch((error) => {
-      // Si ocurre un error en la solicitud
-      console.log(error);
-      console.error("Error en la solicitud:", error);
-      //console.error('Error en la solicitud:', error);
-      //console.error('Error en la solicitud:', error);
+        const [myJson, setJson] = useState({});
+        const [isLoading, setLoading] = useState(true);
       
-     
- 
-    });
+        // Obtiene la URL actual del navegador
+        const urlActual = window.location.href;
+      
+        // Divide la URL en partes usando '/' como separador y toma la última parte
+        const partesDeLaURL = urlActual.split('/');
+        const ultimaParteDeLaURL = partesDeLaURL.pop();
+        const titulo = ultimaParteDeLaURL.split('&')[0];
+        const base = ultimaParteDeLaURL.split('&')[1];
+      
+        useEffect(() => {
+          const apiUrl =
+            "http://127.0.0.1:5000/document?titulo=" +
+            titulo.replace(/-/g, " ") +
+            "&tipoRecurso=" +
+            base;
+      
+          // Realizar la solicitud POST dentro del useEffect
+          axios
+            .get(apiUrl)
+            .then((response) => {
+              if (response.status) {
+                setJson(response.data);
+              } else {
+                alert("Error en la solicitud");
+              }
+            })
+            .catch((error) => {
+              // Manejar errores de la solicitud
+              console.error("Error en la solicitud:", error);
+            })
+            .finally(() => {
+              // Indicar que la carga ha finalizado
+              setLoading(false);
+            });
+        }, [titulo, base]); // Dependencias que desencadenarán la llamada al API
+      
+        useEffect(() => {
+          try {
+            if (!isLoading && myJson.wikiText) {
+              const html = wikiToHtml(myJson.wikiText);
+              document.getElementById("contenido").innerHTML = resaltarFrase(html, titulo);
+            }
+          } catch (error) {
+            console.error(error);
+          }
+        }, [isLoading, myJson, titulo]);
 
+function resaltarFrase(texto, frase) {
+    try {
+        const expresionRegular = new RegExp(frase, 'gi'); // Agregar 'i' para hacerlo no case-sensitive
 
+        // Reemplazamos todas las ocurrencias de la frase con la frase rodeada por las etiquetas <mark>
+        const textoResaltado = texto.replace(expresionRegular, "<mark>$&</mark>");
 
-
-
-
-useEffect(() => {
-    try{
-if (string.length > 0) {
-    const html = wikiToHtml(string);
-    document.getElementById("contenido").innerHTML = resaltarFrase(html,titulo);
-}} catch (error) {
-      console.log(string)
-      console.error(error)
+        return textoResaltado;
+    } catch (err) {
+        console.log(err);
+        return texto;
     }
-    
-  
-}, [string]);
+}
 
     /*function wikiTextToHtml(wikiText) {
         // Encuentra y reemplaza las marcas de negrita ('''')
@@ -171,7 +166,7 @@ if (string.length > 0) {
         <div className="login-screen-view">
             <div className="document-complete-frame">
             
-                <a id="linkMain" href="">{titulo.replace(/-/g, " ")}</a>
+                <a id="linkMain" target="_blank" href={myJson.wikiLink}>{titulo.replace(/-/g, " ")}</a>
                 <div id="contenido">
 
                 </div>

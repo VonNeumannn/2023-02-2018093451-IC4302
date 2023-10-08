@@ -9,13 +9,16 @@ export default function Facet(props) {
         const name = props.name;
         const arrayOptions = props.options;
 
+        const database = props.database
+        const search = props.searched
+
         const daysHTML = [];
         daysHTML.push(<span className="tittle-facet">{name}</span>)
         for (var element of arrayOptions) {
             daysHTML.push(
-                <div key={element.name}>
-                    <input type="checkbox" id={element.name} value={element.value} className="inputs-facets"/>
-                    <label htmlFor={element.name}>{element.name}</label>
+                <div key={name}>
+                    <input type="checkbox" id={element._id} value={""+element._id} className="inputs-facets"/>
+                    <label>{element._id}</label>
                     
                 </div>
             );

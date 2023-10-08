@@ -12,8 +12,8 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  overflow-x: hidden;
-  overflow-y: hidden;
+  overflow-x: auto;
+  overflow-y: auto;
 }
 
 .login-frame {
@@ -250,7 +250,7 @@ h1 {
 }
 
 .gif-looking{
-  width: 50%;
+  width: 85%;
   height: auto;
 }
 

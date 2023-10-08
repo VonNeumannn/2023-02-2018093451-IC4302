@@ -284,6 +284,7 @@ def search():
               "$project": {
                 "_id": 0,
                 "Title": 1,
+                "WikipediaLink":1,
                 "score": { "$meta": "searchScore" },
                 "highlights": { "$meta": "searchHighlights" }
                 }
@@ -300,11 +301,12 @@ def search():
                                     "path":"LastRevisionData.PageBytes",
                                     "boundaries": [0, 1000, 10000, 50000],
                                     },
-                                "LastRevisionData.Redirect": {
+                                "Redirect": {
                                     "type": "string",
-                                    "path": "LastRevisionData.Redirect"
+                                    "path": "LastRevisionData.Redirect",
+                                    "numBuckets" : 4
                                 },
-                                "LastRevisionData.RevisionDate": {
+                                "RevisionDate": {
                                     "type": "date",
                                     "path": "LastRevisionData.RevisionDate",
                                     "boundaries": [datetime.strptime("2000-01-01T00:00:00.000Z", "%Y-%m-%dT%H:%M:%S.%fZ"),
@@ -312,17 +314,20 @@ def search():
                                                     datetime.strptime("2015-01-01T00:00:00.000Z", "%Y-%m-%dT%H:%M:%S.%fZ"),
                                                     datetime.strptime("2023-01-10T00:00:00.000Z", "%Y-%m-%dT%H:%M:%S.%fZ")],
                                 },
-                                "LastRevisionData.User.username": {
+                                "username": {
                                     "type": "string",
-                                    "path": "LastRevisionData.User.username"
+                                    "path": "LastRevisionData.User.username",
+                                    "numBuckets" : 4
                                 },
                                 "Links": {
                                     "type": "string",
-                                    "path": "Links"
+                                    "path": "Links",
+                                    "numBuckets" : 4
                                 },
                                 "Namespace": {
                                     "type": "string",
-                                    "path": "Namespace"
+                                    "path": "Namespace",
+                                    "numBuckets" : 4
                                 },
                                 "NumberLinks": {
                                     "type": "number",
@@ -331,23 +336,28 @@ def search():
                                 },
                                 "Restrictions": {
                                     "type": "string",
-                                    "path": "Restrictions"
+                                    "path": "Restrictions",
+                                    "numBuckets" : 4
                                 },
                                 "SiteDBName": {
                                     "type": "string",
-                                    "path": "SiteDBName"
+                                    "path": "FileData.dbName",
+                                    "numBuckets" : 4
                                 },
                                 "SiteLanguage": {
                                     "type": "string",
-                                    "path": "SiteLanguage"
+                                    "path": "FileData.Language",
+                                    "numBuckets" : 4
                                 },
                                 "SiteName": {
                                     "type": "string",
-                                    "path": "SiteName"
+                                    "path": "FileData.siteName",
+                                    "numBuckets" : 4
                                 },
                                 "WikipediaLink": {
                                     "type": "string",
-                                    "path": "WikipediaLink"
+                                    "path": "WikipediaLink",
+                                    "numBuckets" : 4
                                 }
                             }
                         }
@@ -368,11 +378,11 @@ def search():
 
                 if len(pages) != 0:
                     title + "Search exitoso"
-                    dbLogs(title,timeStamp)
+                    #dbLogs(title,timeStamp)
                     return [pages,facets], 200 #AQUI debería enviar los facets tambien
                 else:
                     title + "Search fallido"
-                    dbLogs(title,timeStamp)
+                    #dbLogs(title,timeStamp)
                     return "Not found", 404
             else:
                 query2 = [{"$search":{
@@ -391,20 +401,20 @@ def search():
                 "count":{
                     "type": "total"
                 }
-            }
-            },
-            {
-                "$facet": {}
-            },
-            {
-              "$project": {
-                "_id": 0,
-                "Title": 1,
-                "score": { "$meta": "searchScore" },
-                "highlights": { "$meta": "searchHighlights" },
                 }
-            }
-            ]
+                },
+                {
+                    "$facet": {}
+                },
+                {
+                "$project": {
+                    "_id": 0,
+                    "Title": 1,
+                    "score": { "$meta": "searchScore" },
+                    "highlights": { "$meta": "searchHighlights" },
+                    }
+                }
+                ]
                 # Agregar los facets al pipeline
                 for facet in facetsParams: 
                     nameFacet = facet["nombre"]
@@ -483,13 +493,16 @@ def showDocument():
             results = collection.find_one({"Title":titleDoc})
             #results = list(collection.find(queryOne))
             wikiText = results.get("LastRevisionData", {}).get("Text", {}).get("wikiText")
+            wikiLink = results.get("WikipediaLink")
+            jsonWiki = {"wikiText":wikiText,
+                        "wikiLink":wikiLink}
             if wikiText is not None:
                 title + "Muestra el documento"
-                dbLogs(title,timeStamp)
-                return jsonify(wikiText), 200
+                #dbLogs(title,timeStamp)
+                return jsonify(jsonWiki), 200
             else:
                 title + "No muestra el documento"
-                dbLogs(title,timeStamp)
+                #dbLogs(title,timeStamp)
                 return "Not found", 404
         except Exception as e:
             return(f"Error: {str(e)}")
