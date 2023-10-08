@@ -1,4 +1,3 @@
--- Se reciben todos los datos relacionados a una página y se ingresan en sus respectivas tablas
 CREATE OR REPLACE PROCEDURE INSERT_PAGE_ALL(
   -- ParÃ¡metros para Page
   p_pageid INT,
@@ -54,9 +53,11 @@ BEGIN
   INSERT INTO "ADMIN"."wikiUser" ("userId","Username")
   VALUES (p_userid,p_username);
 
-
+  SELECT
   -- 3. Obtener nuevo ID de revisiÃ³n
-  SELECT MAX("Revision_id") + 1 INTO v_revision_id FROM "ADMIN"."LastRevision";
+  CASE WHEN MAX("Revision_id") IS NULL THEN 0
+       ELSE MAX("Revision_id") + 1
+  END INTO v_revision_id FROM "ADMIN"."LastRevision";
 
   -- 4. Insertar Ãºltima revisiÃ³n
   -- Se usa el pageid y el wikiuserid de los datos reciÃ©n registrados
@@ -85,13 +86,19 @@ BEGIN
   FOR r_link IN c_links LOOP
 
     -- 5.1 Insertar link a su tabla
-    SELECT MAX("LinkID") + 1 INTO v_link_id FROM "ADMIN"."Link";
+    SELECT 
+    CASE WHEN MAX("LinkID") IS NULL THEN 0
+        ELSE MAX("LinkID") + 1
+    END INTO v_link_id FROM "ADMIN"."Link";
 
     INSERT INTO "ADMIN"."Link" ("LinkID", "link")
       VALUES (v_link_id, r_link.column_value);
 
     -- 5.2 Obtener nuevo ID
-    SELECT MAX("PageLinkID") + 1 INTO v_pagelink_id FROM "ADMIN"."PageXLink";
+    SELECT
+    CASE WHEN MAX("PageLinkID") IS NULL THEN 0  
+        ELSE MAX("PageLinkID") + 1
+    END INTO v_pagelink_id FROM "ADMIN"."PageXLink";
 
     -- 5.3 Insertar en tabla de relaciÃ³n
     INSERT INTO "ADMIN"."PageXLink" ("PageLinkID", "PageID", "LinkID")
@@ -105,7 +112,10 @@ BEGIN
   FOR r_restriction IN c_restrictions LOOP
 
     -- 6.1 Insertar restricciÃ³n
-    SELECT MAX("RestrictionId") + 1 INTO v_restriction_id FROM "ADMIN"."Restriction";
+    SELECT
+    CASE WHEN MAX("RestrictionId") IS NULL THEN 0
+        ELSE MAX("RestrictionId") + 1 
+    END INTO v_restriction_id FROM "ADMIN"."Restriction";
 
     INSERT INTO "ADMIN"."Restriction" ("RestrictionId", "RestrictionLink")
 
@@ -113,7 +123,10 @@ BEGIN
 
     -- 6.2 Obtener nuevo ID
 
-    SELECT MAX("PageXRestrictions_id") + 1 INTO v_page_restriction_id FROM "ADMIN"."PageXRestrictions";
+    SELECT
+    CASE WHEN MAX("PageXRestrictions_id") IS NULL THEN 0
+        ELSE MAX("PageXRestrictions_id") + 1
+    END INTO v_page_restriction_id FROM "ADMIN"."PageXRestrictions";
 
     -- 6.3 Insertar en tabla de relaciÃ³n
 
