@@ -1,0 +1,44 @@
+// Este documento no es para ejecucuón
+// Su propósito es mostrar el mapping de datos en la base mongodb
+
+// Colección Archivos (Solamente para verificar si un archivo ya se proceso)
+{
+    "Filename": "String"
+}
+
+// Contiene los datos de cada una de las páginas
+// Colección page
+{
+    "Title":"String",
+    "PageId": INT,
+    "Namespace":"String",
+
+    "FileData":{
+        "dbName": "String",
+        "siteName": "String",
+        "Language": "English"
+    },
+
+    "LastRevisionData":{
+        "User:"{
+            "UserID":INT,
+            "username": "String"
+        },
+
+        // Texto sin parsear de wikipedia y texto parseado
+        "Text": {
+            "wikiText": "String",
+            "NormalText": "String",
+        },
+
+        "PageBytes": INT,
+        "Redirect": NULL,
+        "RevisionDate": DATE
+    },
+    
+    "Restrictions": ["String","String","....","String"]
+    "Links": ["String","String","....","String"],
+    "WikipediaLink":"String",
+    "WikipediaGenerated":"String",
+    
+}

@@ -33,9 +33,6 @@ variable "db_password" {
   default     = "thisiswrongNereo08"
 }
 
-
-
-
 variable "os_image_id" {
   default = "ocid1.image.oc1.us-chicago-1.aaaaaaaaatkvmql7wfdyx2tzkcrbq6zxmtu2vfn4impe256wrh4cdwlg6lhq"
 }
