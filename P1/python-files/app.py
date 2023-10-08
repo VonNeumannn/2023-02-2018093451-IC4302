@@ -142,6 +142,9 @@ connFire = firebaseConnection()
 #Register
 @app.route("/register", methods=['POST'])
 def register():
+    date_time = datetime.now()
+    timeStamp = date_time.strftime("%Y-%m-%dT%H:%M:%S")
+    title = ""
     if request.method == 'POST':
         jsonCred = request.get_json()
         name = jsonCred["name"]
@@ -156,12 +159,17 @@ def register():
             "email" : f"{email}",
             "password" : f"{password}"
         })
+        title = f"Register: {name}"
+        dbLogs(title,timeStamp)
         return jsonify({"message":"Registrado existosamente",
-                        "status":True}), 201
+                        "status":1}), 201
 
 #Login
 @app.route("/login", methods=['POST'])
 def login():
+    date_time = datetime.now()
+    timeStamp = date_time.strftime("%Y-%m-%dT%H:%M:%S")
+    title = ""
     if request.method == 'POST':
         jsonCred = request.get_json()
         email = jsonCred["email"]
@@ -181,14 +189,20 @@ def login():
             
         try:
             if (user == None):
+                title = "User no encontrado"
+                dbLogs(title,timeStamp)
                 return jsonify({"message":"Usuario no encontrado",
                             "status": 0}), 404
             else:
                 if (user['password'] == password):
+                    title = f"Login de: {user}"
+                    dbLogs(title,timeStamp)
                     return jsonify({"message":f"{user['name']},logueado existosamente",
                                     "status":1})
                 else:
-                    return jsonify({"message":f"correo o contraseña incorrecta",
+                    title = "Correo o contraseña incorrecta"
+                    dbLogs(title,timeStamp)
+                    return jsonify({"message":f"Correo o contraseña incorrecta",
                                 "status":0})
         except Exception as e:
             return e
@@ -234,8 +248,8 @@ def search():
             conn.close()
     else:
         stringBusqueda = request.args.get('stringBusqueda')
-        facetsParams = eval(request.args.get('facets'))
-        print(facetsParams)
+        #facetsParams = eval(request.args.get('facets'))
+        facetsParams = []
         #facetsParams = [{"nombre": "NumberLinks", "valor": 50}]
         #facetsParams = []
         #Mongo DB
@@ -271,7 +285,7 @@ def search():
                 "_id": 0,
                 "Title": 1,
                 "score": { "$meta": "searchScore" },
-                "highlights": { "$meta": "searchHighlights" },
+                "highlights": { "$meta": "searchHighlights" }
                 }
             }
             ]
@@ -285,7 +299,6 @@ def search():
                                     "type":"number",
                                     "path":"LastRevisionData.PageBytes",
                                     "boundaries": [0, 1000, 10000, 50000],
-                                    "default": "other"
                                     },
                                 "LastRevisionData.Redirect": {
                                     "type": "string",
@@ -298,7 +311,6 @@ def search():
                                                     datetime.strptime("2005-01-01T00:00:00.000Z", "%Y-%m-%dT%H:%M:%S.%fZ"),
                                                     datetime.strptime("2015-01-01T00:00:00.000Z", "%Y-%m-%dT%H:%M:%S.%fZ"),
                                                     datetime.strptime("2023-01-10T00:00:00.000Z", "%Y-%m-%dT%H:%M:%S.%fZ")],
-                                    "default": "other"
                                 },
                                 "LastRevisionData.User.username": {
                                     "type": "string",
@@ -316,7 +328,6 @@ def search():
                                     "type": "number",
                                     "path": "NumberLinks",
                                     "boundaries": [0, 10, 50, 100],
-                                    "default": "other"
                                 },
                                 "Restrictions": {
                                     "type": "string",
@@ -339,22 +350,26 @@ def search():
                                     "path": "WikipediaLink"
                                 }
                             }
-                        }   
+                        }
                     }
                 }
             ]
             
             if len(facetsParams) == 0:
                 resultsGeneral = list(collection.aggregate(query))
-                resultsFacets = list(collection.aggregate(queryFacets))
-                resultsGeneral.append(resultsFacets)
+                resultsFacets= list(collection.aggregate(queryFacets))
                 pages = []
+                facets = []
+
                 for doc in resultsGeneral:
                     pages.append(doc)
+                for facet in resultsFacets:
+                    facets.append(facet)
+
                 if len(pages) != 0:
                     title + "Search exitoso"
                     dbLogs(title,timeStamp)
-                    return pages, 200 #AQUI debería enviar los facets tambien
+                    return [pages,facets], 200 #AQUI debería enviar los facets tambien
                 else:
                     title + "Search fallido"
                     dbLogs(title,timeStamp)
@@ -411,7 +426,7 @@ def search():
 @app.route("/document", methods=['GET'])
 def showDocument():
     #Obtiene los parametros
-    idDocument = request.args.get('titulo')
+    titleDoc = request.args.get('titulo')
     tipoRecurso = request.args.get('tipoRecurso')
     #logs
     date_time = datetime.now()
@@ -428,7 +443,7 @@ def showDocument():
                         FROM Page P
                         INNER JOIN LastRevision LR
                         ON LR.PageId = P.Pageid
-                        WHERE P.Title = {idDocument}
+                        WHERE P.Title = {title}
                         """
             cursor.execute(sql)
             rows = cursor.fetchall()
@@ -450,24 +465,30 @@ def showDocument():
     else:
         #Mongo DB
         conn = dbMongo_connection()
-        collection = conn["PAGINA"]
+        collection = conn["Pages"]
         #logs
         date_time = datetime.now()
         timeStamp = date_time.strftime("%Y-%m-%dT%H:%M:%S")
         title = ""
         try:
             #Muestra la pagina según el id
-            documents = collection.find_one({"Title":idDocument})
-            print(documents)
-            page = None
-            for doc in documents:
-                page = doc
-            if page is not None:
-                title + "Search exitoso"
+            queryOne = {
+            "search": {
+                "text": {
+                    "path": ["Title"],
+                    "query": titleDoc
+                }
+            }
+            }
+            results = collection.find_one({"Title":titleDoc})
+            #results = list(collection.find(queryOne))
+            wikiText = results.get("LastRevisionData", {}).get("Text", {}).get("wikiText")
+            if wikiText is not None:
+                title + "Muestra el documento"
                 dbLogs(title,timeStamp)
-                return jsonify(page), 200
+                return jsonify(wikiText), 200
             else:
-                title + "Search fallido"
+                title + "No muestra el documento"
                 dbLogs(title,timeStamp)
                 return "Not found", 404
         except Exception as e:

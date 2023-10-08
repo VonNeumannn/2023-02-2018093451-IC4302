@@ -1,21 +1,64 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 
 
 export default function DocumentComplete() {
+    const [array, setArray] = useState([]);
     function resaltarFrase(texto, frase) {
-        // Utilizamos una expresión regular con el modificador 'g' para buscar todas las ocurrencias de la frase
-        const expresionRegular = new RegExp(frase, 'g');
-
-        // Reemplazamos todas las ocurrencias de la frase con la frase rodeada por las etiquetas <mark>
-        const textoResaltado = texto.replace(expresionRegular, "<mark>" + frase + "</mark>");
-
-        return textoResaltado;
+        try {
+            const expresionRegular = new RegExp(frase, 'gi'); // Agregar 'i' para hacerlo no case-sensitive
+    
+            // Reemplazamos todas las ocurrencias de la frase con la frase rodeada por las etiquetas <mark>
+            const textoResaltado = texto.replace(expresionRegular, "<mark>$&</mark>");
+    
+            return textoResaltado;
+        } catch (err) {
+            console.log(err);
+            return texto;
+        }
     }
-    const documento = {
-        "title": "Einstein",
-        "wikitext": "== Albert Einstein ==\nAlbert Einstein was a German-born theoretical physicist who developed the theory of relativity, one of the two pillars of modern physics. His work is also known for its influence on the philosophy of science.\n\n=== Early Life ===\nEinstein was born in Ulm, Germany, in 1879. He showed an early aptitude for mathematics and physics and later studied at the Swiss Federal Polytechnic.\n\n=== Theory of Relativity ===\nEinstein's theory of relativity revolutionized our understanding of space, time, and gravity. His famous equation, E=mc^2, is well-known around the world.\n\n=== Later Life ===\nEinstein emigrated to the United States in the 1930s to escape the rise of the Nazis in Germany. He became a professor at Princeton University and continued his work in physics and activism.\n",
-        "plaintext": "Albert Einstein\n\nAlbert Einstein was a German-born theoretical physicist who developed the theory of relativity, one of the two pillars of modern physics. His work is also known for its influence on the philosophy of science.\n\nEarly Life\n\nEinstein was born in Ulm, Germany, in 1879. He showed an early aptitude for mathematics and physics and later studied at the Swiss Federal Polytechnic.\n\nTheory of Relativity\n\nEinstein's theory of relativity revolutionized our understanding of space, time, and gravity. His famous equation, E=mc^2, is well-known around the world.\n\nLater Life\n\nEinstein emigrated to the United States in the 1930s to escape the rise of the Nazis in Germany. He became a professor at Princeton University and continued his work in physics and activism."
+    
+    const apiUrl =
+    "http://127.0.0.1:5000/document?titulo=" +
+    search +
+    "&tipoRecurso=" +
+    tipoDB;
+
+  //Realizar la solicitud POST
+  axios
+    .get(apiUrl)
+    .then((response) => {
+      if (response.status) {
+        setArray(response.data[0]);
+        
+      } else {
+        alert("holi 1");
+      }
+    })
+    .catch((error) => {
+      // Si ocurre un error en la solicitud
+      console.log(error);
+      console.error("Error en la solicitud:", error);
+      //console.error('Error en la solicitud:', error);
+      //console.error('Error en la solicitud:', error);
+      
+     
+ 
+    });
+
+
+
+
+useEffect(() => {
+    try{
+if (array.length > 0) {
+    document.getElementById("contenido").innerHTML = resaltarFrase(,);
+}} catch (error) {
+      console.log(array[i])
+      console.error(error)
     }
+    
+  
+}, [array]);
 
     function wikiTextToHtml(wikiText) {
         // Encuentra y reemplaza las marcas de negrita ('''')
@@ -61,9 +104,7 @@ export default function DocumentComplete() {
 
     // Ahora, puedes insertar el HTML resultante en un elemento en tu página web
 
-    useEffect(() => {
-        document.getElementById("contenido").innerHTML = resaltarFrase(html,documento.title);
-    }, [html]);
+
 
 
     return (

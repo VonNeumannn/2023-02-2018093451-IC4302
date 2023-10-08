@@ -4,16 +4,58 @@ import '../App.css';
 import { createRoot } from 'react-dom';
 
 export default function Document(props) {
-
+    console.log(props.title+" + "+props.text)
     function resaltarFrase(texto, frase) {
-        // Utilizamos una expresión regular con el modificador 'g' para buscar todas las ocurrencias de la frase
-        const expresionRegular = new RegExp(frase, 'g');
-
-        // Reemplazamos todas las ocurrencias de la frase con la frase rodeada por las etiquetas <mark>
-        const textoResaltado = texto.replace(expresionRegular, "<mark>" + frase + "</mark>");
-
-        return textoResaltado;
+        try {
+            const expresionRegular = new RegExp(frase, 'gi'); // Agregar 'i' para hacerlo no case-sensitive
+    
+            // Reemplazamos todas las ocurrencias de la frase con la frase rodeada por las etiquetas <mark>
+            const textoResaltado = texto.replace(expresionRegular, "<mark>$&</mark>");
+    
+            return textoResaltado;
+        } catch (err) {
+            console.log(err);
+            return texto;
+        }
     }
+
+    function textMerge(array) {
+        let text = "";
+        for (let i = 0; i < array.length; i++) {
+            text += array[i].value + " ";
+        }
+        return text
+    }
+
+    
+
+    function buscarYCapturarContexto(arr, fraseABuscar) {
+        let contador = 0; // Inicializamos un contador para llevar el seguimiento de cuántas veces se ha encontrado la frase.
+        const contexto = []; // Array para almacenar los contextos.
+      
+        for (let i = 0; i < arr.length; i++) {
+          const cadena = arr[i];
+      
+          if (cadena.includes(fraseABuscar)) {
+            contador++;
+      
+            const palabras = cadena.split(" "); // Dividimos la cadena en palabras.
+            const indiceFrase = palabras.indexOf(fraseABuscar); // Encontramos el índice de la frase en la lista de palabras.
+      
+            // Capturamos el contexto de 10 palabras antes y después de la frase.
+            const inicio = Math.max(0, indiceFrase - 10);
+            const fin = Math.min(palabras.length, indiceFrase + 11);
+            const contextoFrase = palabras.slice(inicio, fin).join(" ");
+            contexto.push(contextoFrase);
+      
+            if (contador === 2) {
+              break;
+            }
+          }
+        }
+      
+        return contexto;
+      }
 
     function encontrarContexto(texto, frase) {
         // Divide el texto en palabras
@@ -52,13 +94,13 @@ export default function Document(props) {
     const containerRef = useRef(null);
     useEffect(() => {
 
-        let text = encontrarContexto(props.text,title);
-        text = resaltarFrase(text, title)
-        const textoResaltado = text
+        let texto = textMerge(props.text) //buscarYCapturarContexto(props.text, props.searched)//encontrarContexto(props.text,props.searched);
+        texto = resaltarFrase(texto, props.searched)
+        const textoResaltado = texto
         const daysHTML = [];
         daysHTML.push(
             <div key={title}>
-                <h2 className="title-document"><a href={"/result/" + title} target="_parent">{title}</a></h2>
+                <h2 className="title-document"><a href={"/result/" + title+"&"+props.database} target="_parent">{title}</a></h2>
                 <div dangerouslySetInnerHTML={{ __html: textoResaltado }} />
             </div>
 
