@@ -3,6 +3,7 @@ import userImage from '../assets/user.png'
 import Eye from '../assets/show-password-eye.png';
 import NotEye from '../assets/hide-password-eye.png';
 import { Link, useNavigate } from "react-router-dom";
+import axios from 'axios';
 
 export default function Login() {
 
@@ -17,31 +18,30 @@ export default function Login() {
         const password = document.getElementById('password-input').value;
         console.log(email+" + "+password)
 
-        fetch('https://hmnlr3nl-5000.use2.devtunnels.ms/login', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                "email": email, "password": password
-            }),
-        }).then((res) => res.json())
-            .then((data) => {
+        const apiUrl = 'http://127.0.0.1:5000/login';
 
-                if (data.status) {
-                    navigate('/search')
+        // Datos que deseas enviar en la solicitud POST
+        const data = {
+        "email": email,
+        "password": password
+        };
 
-
-                } else {
-                    alert(data.message)
-                }
-
-            })
+        // Realizar la solicitud POST
+        axios.post(apiUrl, data)
+            .then(response => {
+            console.log(response)
+            if (response.status) {
+                navigate('/search')
 
 
-            .catch(error => {
-                console.log('Error al obtener datos desde el backend:', error);
-            })
+            } else {
+                alert(response.message)
+            }
+        })
+        .catch(error => {
+            // Si ocurre un error en la solicitud
+            console.error('Error en la solicitud:', error);
+          });
     }
 
     
