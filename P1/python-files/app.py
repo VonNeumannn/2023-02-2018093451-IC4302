@@ -1,4 +1,5 @@
 from flask import Flask, jsonify, request
+from flask_cors import CORS
 import oracledb
 from pymongo import MongoClient
 from borneo import NoSQLHandle, NoSQLHandleConfig, PutRequest
@@ -8,9 +9,17 @@ import json
 import datetime
 from datetime import datetime
 import certifi
+import firebase_admin
+from firebase_admin import credentials
+from firebase_admin import firestore
+from google.cloud.firestore_v1.base_query import FieldFilter
+
 
 #Constants
 app = Flask(__name__)
+# Configura CORS para toda la aplicación
+cors = CORS(app, resources={r"/*": {"origins": "http://localhost:5000"}})
+
 
 """
 TODO:
@@ -107,6 +116,85 @@ rvLR0LOLOhVbGpy/8zzQ/w==
     rq.set_value(final_log)
     nosql_handle.put(rq)
 
+#Firebase authentication
+def firebaseConnection():
+    # Use a service account.
+    cred = credentials.Certificate({
+    "type": "service_account",
+    "project_id": "registeruserswikisearch",
+    "private_key_id": "24739b478e485bf606c432cb09875f8a9da7f228",
+    "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQC0reiL/oI7Nh6f\nOOSm3CfOG6LMrBFrP4f8h1X/TbLUQspYr1ycXVya/u/cYu/K5yc51vQ8BU2dDO3z\nJG64vUtsK3CXDl9QWWhFcalgKsEijEKZF2ppMDZvZxtQ+atbscAjWJuEGIVL8Oq+\nYRfwICtl+8EzhmVo/PT8BF8E4XJWdsvfrFyrlonUH4GZ5FYa2eg3dzqzyLKEoVJR\nCgbF690TDM3ki9P17WrQac4mKbla9JwrYqiq+o2IUS1v3K0XpUxi4ERM5rPACxb+\nEaV7NNBpshT8Xt4AmEWEUVYON/mdgLhC/d81NG4rUKplbM9W14mcXXtliPS+1yvQ\nXjBHny6PAgMBAAECggEAE8Ae946utcJIvqb9d7ABOeqTdUQp80tSlixFHk9kCQf0\nDpW8zer2wIq1taWrCMcT5qK0uArsXQqYyEdnQxKOOBjXieusR6A+Ybj3BugljJ1A\nenOw0ibPDIZ82fEw5ikcE8EP3vS/PXnsbzs13q3lkJRgnj1GwJ9GOHZR3Lq4QPM0\nVeTx0FByzP6DtHw5JTCQxVcGpc/M2O4q+k3w3kMN6CgLeIJS6YWo3jXuPEVaMGQY\nMRPwyeYuJhDReXn2Fao9xtsDVV2Q+6AD3WvZbP63VlRjVHaF49JuDJ3MIvUdSREC\nixdWEPVe9aFH0BXP/f7H4mEOaGddiv/3TaQ0AxfjgQKBgQDoI8PtSFBPYvD0Xsj7\nSzYySs77/QIWA1oL6tAadD52rMoYP+2+TzI/6ur307ezgytQofLW695SoD3QYkH6\nM252PntmWj7u8kGVCEohvFB8L9HQL1xwhHz8co9Gh1YosqVYkibFMDkkS1h0/vbt\nNg4LvghLWmbrPYXcpBbTivNUcQKBgQDHQBQvKgTLeLXjUIzJ0pR9QNqzv9YYsOle\nZVX348L6OXObdz4NOTiUrKZFl1sQpNG1IBZqxCZgfXtLiGhB/BKxgtjagP0Ep3HD\nOx0sz1MX3oyXY1AZ7QPretJ4s5Oe9FoHo1ZGLSq/HmymjrXqkXcXxSRrBjWxXxoN\npoHoRMAy/wKBgG8RDaDtxF73O8nvv8FbzuZpHHc8Kk9V8zNYeZDupSQqr9bCX4F6\natRiFWHVjkL5MzQ1B/cEiy6FNI4LNP38tZEle+0QqKOyjOY9PRq++tMwHfa5ckTz\nXsl6FkrsXbDDKJEj/CDEXdKbqgrwIjyEbFv55AYJjsxmdzGF4NX92UZBAoGAEhJF\nwmFVPf8cwBk2K7flr9aJ/3OOv36MK/uU6H7H2FoNmjQedKST9SgTjIxFviS0wHDA\nl75inK3E2PzuN83dBCyR7n90c0+cidB6vO2w46FTrwda5H8Ss/DX1gqzgN84qyit\nUoAWOG9R+2lGJpg67PT8cJiHlibB/irz7VUO+ZECgYA98YtPEHV7lz2B1Nxgqbte\nQAbY0nmrzoAjuxxxjbECVZbYnUbcdqQpFEZgzCz8EWj2xYNHXvOL85gRHJYLhF+C\nGX3sx/WzTWsUdOOCrCSTVulM6/OHK+vjKmcu4lLdi9UQ9TSGHa6CVx6nO5uMvxGg\nXwrNdOefONHlk9hWoisl7Q==\n-----END PRIVATE KEY-----\n",
+    "client_email": "firebase-adminsdk-zytht@registeruserswikisearch.iam.gserviceaccount.com",
+    "client_id": "110211652575937651143",
+    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+    "token_uri": "https://oauth2.googleapis.com/token",
+    "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+    "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-zytht%40registeruserswikisearch.iam.gserviceaccount.com",
+    "universe_domain": "googleapis.com"
+    }
+    )
+    # Genera una conexion a firestore
+    firebase_admin.initialize_app(cred)
+    db = firestore.client()
+    return db
+connFire = firebaseConnection()
+
+#Register
+@app.route("/register", methods=['POST'])
+def register():
+    if request.method == 'POST':
+        name = request.form.get('name')
+        lastName = request.form.get('lastName')
+        email = request.form.get('email')
+        password = request.form.get('password')
+
+        #agrega un nuevo documento a la coleccion usuarios
+        connFire.collection("users").add({
+            "name" : f"{name}",
+            "lastName" : f"{lastName}",
+            "email" : f"{email}",
+            "password" : f"{password}"
+        })
+        return jsonify({"message":f"{name},registrado existosamente",
+                        "status":True}), 201
+
+#Login
+@app.route("/login", methods=['POST'])
+def login():
+    if request.method == 'POST':
+        email = request.form.get('email')
+        password = request.form.get('password')
+        
+        # Create a reference to the cities collection
+        users = connFire.collection("users")
+        # Create a query against the collection
+        # Obtiene el documento que contenga el correo indicado 
+        docs = (
+            users
+            .where(filter=FieldFilter("email", "==", f"{email}"))
+            .stream()
+        )
+        user = None
+        for doc in docs:
+            user = doc.to_dict()
+        try:
+            print(user)
+            if (user == None):
+                print("Siuiuuuuu")
+                return jsonify({"message":"Usuario no encontrado",
+                            "status": 0}), 404
+            else:
+                if (user['password'] == password):
+                    print("Siuiuuuuu")
+                    return jsonify({"message":f"{user['name']},logueado existosamente",
+                                    "status":1})
+                else:
+                    print("Siuiuuuuu")
+                    return jsonify({"message":f"correo o contraseña incorrecta",
+                                "status":0})
+        except Exception as e:
+            return e
+
 #Search by title
 @app.route("/search", methods=['GET'])
 def search():
@@ -148,9 +236,10 @@ def search():
             conn.close()
     else:
         stringBusqueda = request.args.get('stringBusqueda')
-        #facetsParams = request.args.get('facets')
+        facetsParams = eval(request.args.get('facets'))
+        print(facetsParams)
         #facetsParams = [{"nombre": "NumberLinks", "valor": 50}]
-        facetsParams = []
+        #facetsParams = []
         #Mongo DB
         conn = dbMongo_connection()
         collection = conn["Pages"]
@@ -256,6 +345,7 @@ def search():
                     }
                 }
             ]
+            
             if len(facetsParams) == 0:
                 resultsGeneral = list(collection.aggregate(query))
                 resultsFacets = list(collection.aggregate(queryFacets))
@@ -323,7 +413,7 @@ def search():
 @app.route("/document", methods=['GET'])
 def showDocument():
     #Obtiene los parametros
-    idDocument = request.args.get('idDocument')
+    idDocument = request.args.get('titulo')
     tipoRecurso = request.args.get('tipoRecurso')
     #logs
     date_time = datetime.now()
@@ -336,9 +426,11 @@ def showDocument():
         cursor = conn.cursor()
         #Request
         try:
-            sql = f"""SELECT IDPAGINA, TITULO, NAMESPACE, REDIRECT, RESTRICTION 
-                        FROM PAGINA
-                        WHERE IDPAGINA = {idDocument}
+            sql = f"""SELECT P.Title, LR.NormalText
+                        FROM Page P
+                        INNER JOIN LastRevision LR
+                        ON LR.PageId = P.Pageid
+                        WHERE P.Title = {idDocument}
                         """
             cursor.execute(sql)
             rows = cursor.fetchall()
@@ -367,7 +459,7 @@ def showDocument():
         title = ""
         try:
             #Muestra la pagina según el id
-            documents = collection.find_one({"IDPAGINA":idDocument})
+            documents = collection.find_one({"Title":idDocument})
             print(documents)
             page = None
             for doc in documents:
@@ -385,4 +477,4 @@ def showDocument():
 
 # Main
 if __name__ == '__main__':
-    app.run()
+    app.run(debug=True)
