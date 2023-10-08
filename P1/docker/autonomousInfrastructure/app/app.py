@@ -17,7 +17,7 @@ conn = dbOracle_connection()
 cursor = conn.cursor()
 
 # Crear Estructura
-f = open('ModeloOracle.sql')
+f = open('modeloSQL/ModeloOracle.sql')
 full_sql = f.read()
 sql_commands = full_sql.split(';')
 
