@@ -12,7 +12,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy modeloSQL folder 
 # Using relative path from Dockerfile location
-COPY ../../modeloSQL /app/modeloSQL  
+COPY modeloSQL /app/modeloSQL
 
 # List folder to validate files copied
 RUN ls -l /app/modeloSQL
