@@ -12,6 +12,7 @@ export default function Search() {
   var somethingSearched = false;
   var tipoDB;
   const [array, setArray] = useState([]);
+  
   const OnClickHandler = () => {
     
     const search = document.getElementById("searching").value;
@@ -20,9 +21,9 @@ export default function Search() {
     } else {
       const miDiv = document.getElementById("miDiv");
       miDiv.innerHTML = "";
+      var mensajeError = document.getElementById("mensaje-error");
 
       const radios = document.getElementsByName("opcion");
-      var mensajeError = document.getElementById("mensaje-error");
       // Iterar a través de los elementos de radio para encontrar el seleccionado
       
       for (const radio of radios) {
@@ -90,6 +91,16 @@ export default function Search() {
       for (let i = 0; i < array.length; i++) {
         try {
           let a = array[i]
+          const radios = document.getElementsByName("opcion");
+      // Iterar a través de los elementos de radio para encontrar el seleccionado
+      
+      for (const radio of radios) {
+        if (radio.checked) {
+          tipoDB = radio.value;
+          break; // Salir del bucle cuando se encuentre el seleccionado
+        }
+      }
+          console.log("------------------------",tipoDB)
           daysHTML.push(
             <Document
               title={array[i].Title.toString()}
@@ -112,6 +123,21 @@ export default function Search() {
       }
     }
   }, [array]);
+
+  useEffect(() => {
+    const inputElement = document.getElementById('searching');
+
+    // Agrega un event listener al elemento input
+    inputElement.addEventListener('keydown', function(event) {
+    // Verifica si la tecla presionada es "Enter" (código de tecla 13)
+    if (event.keyCode === 13) {
+        // Realiza la acción que deseas cuando se presiona "Enter"
+        OnClickHandler()
+        // Puedes reemplazar el alert con la acción que desees realizar.
+    }
+});
+    
+}, [somethingSearched]);
 
   const facets = {
     facets: [
