@@ -12,11 +12,11 @@ CREATE OR REPLACE PROCEDURE INSERT_PAGE_ALL(
   p_username VARCHAR2,
 
   -- ParÃƒÆ’Ã‚Â¡metros para LastRevision
-  p_revisionwikitext VARCHAR2,
+  p_revisionwikitext CLOB,
   p_redirect VARCHAR2,
   p_pagebytes INT,
   p_revisiondate DATE,
-  p_revisioncleantext VARCHAR2,
+  p_revisioncleantext CLOB,
 
   -- Lista de links
   p_links string_varray,
