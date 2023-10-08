@@ -170,7 +170,8 @@ if (string.length > 0) {
     return (
         <div className="login-screen-view">
             <div className="document-complete-frame">
-                <h1>{titulo.replace(/-/g, " ")}</h1>
+            
+                <a id="linkMain" href="">{titulo.replace(/-/g, " ")}</a>
                 <div id="contenido">
 
                 </div>

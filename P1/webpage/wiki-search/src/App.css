@@ -33,6 +33,12 @@ h1 {
   color: #363636;
 }
 
+#linkMain{
+  font-size:32px;
+  margin-top:2%;
+  font-weight:700;
+}
+
 .login-frame img {
   width: 10%;
   margin-bottom: 3%;
