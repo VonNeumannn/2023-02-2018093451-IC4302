@@ -59,11 +59,11 @@ CREATE TABLE "LastRevision" (
 "Revision_id" INT PRIMARY KEY,
 "wikiUserId" INT,
 FOREIGN KEY ("wikiUserId") REFERENCES "wikiUser"("userId"),
-"RevisionWikiText" VARCHAR2(4000),
+"RevisionWikiText" CLOB,
 "Redirect" VARCHAR2(1000) NULL,
 "PageBytes" INT,
 "RevisionDate" DATE NULL,
-"RevisionCleanText" VARCHAR2(4000),
+"RevisionCleanText" CLOB,
 "PageId" INT,
 FOREIGN KEY ("PageId") REFERENCES "Page"("Pageid")
 );
@@ -84,4 +84,4 @@ FOREIGN KEY ("PageID") REFERENCES "Page"("Pageid"),
 FOREIGN KEY ("LinkID") REFERENCES "Link"("LinkID")
 );
 
-CREATE OR REPLACE TYPE string_varray AS VARRAY(2000) OF VARCHAR2(1000);
+CREATE OR REPLACE TYPE string_varray AS VARRAY(4000) OF VARCHAR2(1000);
