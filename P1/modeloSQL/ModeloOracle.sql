@@ -49,7 +49,6 @@ CREATE TABLE "Page" (
 FOREIGN KEY ("Siteid") REFERENCES "Site"("Siteid"),
 "Namespace" VARCHAR2(500),
 "WikipediaLink" VARCHAR2(1000),
-"Restriction" INT,
 "Title" VARCHAR2(500),
 "WikipediaGenerated" VARCHAR2(200)
 );
@@ -60,11 +59,11 @@ CREATE TABLE "LastRevision" (
 "Revision_id" INT PRIMARY KEY,
 "wikiUserId" INT,
 FOREIGN KEY ("wikiUserId") REFERENCES "wikiUser"("userId"),
-"RevisionWikiText" CLOB,
-"Redirect" VARCHAR2(1000),
+"RevisionWikiText" VARCHAR2(4000),
+"Redirect" VARCHAR2(1000) NULL,
 "PageBytes" INT,
-"RevisionDate" DATE,
-"RevisionCleanText" CLOB,
+"RevisionDate" DATE NULL,
+"RevisionCleanText" VARCHAR2(4000),
 "PageId" INT,
 FOREIGN KEY ("PageId") REFERENCES "Page"("Pageid")
 );
@@ -84,3 +83,5 @@ CREATE TABLE "PageXLink" (
 FOREIGN KEY ("PageID") REFERENCES "Page"("Pageid"),
 FOREIGN KEY ("LinkID") REFERENCES "Link"("LinkID")
 );
+
+CREATE OR REPLACE TYPE string_varray AS VARRAY(2000) OF VARCHAR2(1000);

@@ -6,7 +6,10 @@ CREATE OR REPLACE PROCEDURE INSERT_FILE (
 AS
 BEGIN
 
-    SELECT MAX("Fileid") + 1 INTO p_fileid FROM "ADMIN"."File";
+    SELECT
+    CASE WHEN MAX("Fileid") IS NULL THEN 0
+         ELSE MAX("Fileid") + 1
+    END INTO p_fileid FROM "ADMIN"."File";
 
     INSERT INTO "File" ("Fileid", "Filename")
     VALUES (p_fileid, p_filename);

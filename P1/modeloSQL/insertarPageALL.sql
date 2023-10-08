@@ -1,73 +1,78 @@
--- Se reciben todos los datos relacionados a una página y se ingresan en sus respectivas tablas
 CREATE OR REPLACE PROCEDURE INSERT_PAGE_ALL(
-  -- Parámetros para Page
+  -- ParÃƒÆ’Ã‚Â¡metros para Page
   p_pageid INT,
   p_siteid INT,
   p_namespace VARCHAR2,
   p_wikipedialink VARCHAR2,
-  p_restriction INT,
   p_title VARCHAR2,
-  p_wikipediagenerated VARCHAR2
+  p_wikipediagenerated VARCHAR2,
 
-  -- Parámetros para el Wikiuser
+  -- ParÃƒÆ’Ã‚Â¡metros para el Wikiuser
   p_userid INT,
-  p_username VARCHAR2
+  p_username VARCHAR2,
 
-  -- Parámetros para LastRevision
-  p_revisionwikitext CLOB,
+  -- ParÃƒÆ’Ã‚Â¡metros para LastRevision
+  p_revisionwikitext VARCHAR2,
   p_redirect VARCHAR2,
   p_pagebytes INT,
   p_revisiondate DATE,
-  p_revisioncleantext CLOB,
-  p_pageid INT
+  p_revisioncleantext VARCHAR2,
 
   -- Lista de links
-  p_links SYS.ODCIVARCHAR2LIST,
+  p_links string_varray,
 
   -- Lista de restricciones
-  p_restrictions SYS.ODCIVARCHAR2LIST
+  p_restrictions string_varray
+
 )
 AS
-
-  -- Variables
+   -- Variables
   v_revision_id INT;
   v_link_id INT;
   v_pagelink_id INT;
-
-  -- Cursor para links
-  CURSOR c_links IS
-    SELECT column_value FROM TABLE(p_links);
-
-  -- Cursor para restricciones
-  CURSOR c_restrictions IS
-    SELECT column_value FROM TABLE(p_restrictions);
+  v_restriction_id INT;
+  v_page_restriction_id INT;
+  user_count INT;
+  link_id INT;
+  restriction_id NUMBER;
 
 BEGIN
 
-  -- 1. Insertar página
-  INSERT INTO page (
-    pageid, siteid,namespace,wikipedialink,title,wikipediagenerated)
+  -- 1. Insertar pÃƒÆ’Ã‚Â¡gina
+  INSERT INTO "ADMIN"."Page" (
+    "Pageid", "Siteid","Namespace","WikipediaLink","Title","WikipediaGenerated")
   VALUES (p_pageid, p_siteid,p_namespace, p_wikipedialink,p_title,p_wikipediagenerated);
 
-  -- 2. Insertar Wikiuser
-  INSERT INTO wikiuser (userid,username)
-  VALUES (p_userid,p_username);
+  -- 2. Insertar Wikiuser solo si no existe
+  SELECT COUNT(*) INTO user_count
+  FROM "ADMIN"."wikiUser"
+  WHERE "userId" = p_userid;
 
+  IF user_count = 0 THEN
 
+    -- User does not exist, insert new row
+    INSERT INTO "ADMIN"."wikiUser" ("userId", "Username")
+    VALUES (p_userid, p_username);
+
+  END IF;
+
+  SELECT
   -- 3. Obtener nuevo ID de revisión
-  SELECT MAX(revision_id) + 1 INTO v_revision_id FROM lastrevision;
+  CASE WHEN MAX("Revision_id") IS NULL THEN 0
+       ELSE MAX("Revision_id") + 1
+  END INTO v_revision_id FROM "ADMIN"."LastRevision";
 
-  -- 4. Insertar última revisión
-  -- Se usa el pageid y el wikiuserid de los datos recién registrados
-   INSERT INTO lastrevision (
-    revision_id,
-    wikiuserid,
-    revisionwikitext,
-    redirect,
-    pagebytes,
-    revisiondate,
-    revisioncleantext,
-    pageid
+  -- 4. Insertar ÃƒÆ’Ã‚Âºltima revisiÃƒÆ’Ã‚Â³n
+  -- Se usa el pageid y el wikiuserid de los datos reciÃƒÆ’Ã‚Â©n registrados
+   INSERT INTO "ADMIN"."LastRevision" (
+    "Revision_id",
+    "wikiUserId",
+    "RevisionWikiText",
+    "Redirect",
+    "PageBytes",
+    "RevisionDate",
+    "RevisionCleanText",
+    "PageId"
   ) VALUES (
     v_revision_id,
     p_userid,
@@ -81,19 +86,37 @@ BEGIN
 
   -- 5. Recorrer links
   -- Por cada link en la lista
-  FOR r_link IN c_links LOOP
+  FOR i IN 1..p_links.COUNT LOOP
 
     -- 5.1 Insertar link a su tabla
-    SELECT MAX(linkid) + 1 INTO v_link_id FROM link;
+      SELECT "LinkID" INTO link_id
+      FROM "ADMIN"."Link"
+      WHERE "link" = p_links(i);
 
-    INSERT INTO link (linkid, link)
-      VALUES (v_link_id, r_link.column_value);
+      IF link_id IS NULL THEN
+        -- Link does not exist, insert new one
+        SELECT
+          CASE WHEN MAX("LinkID") IS NULL THEN 0
+              ELSE MAX("LinkID") + 1
+          END INTO v_link_id
+        FROM "ADMIN"."Link";
 
-    -- 5.2 Obtener nuevo ID
-    SELECT MAX(pagelinkid) + 1 INTO v_pagelink_id FROM pagexlink;
+        INSERT INTO "ADMIN"."Link" ("LinkID", "link")
+          VALUES (v_link_id, p_links(i));
 
-    -- 5.3 Insertar en tabla de relación
-    INSERT INTO pagexlink (pagelinkid, pageid, linkid)
+      ELSE
+        -- Link exists, use existing ID
+        v_link_id := link_id;
+
+      END IF;
+
+    -- 5.2 Insertar en tabla de relaciÃƒÆ’Ã‚Â³n
+    SELECT
+    CASE WHEN MAX("PageLinkID") IS NULL THEN 0
+        ELSE MAX("PageLinkID") + 1
+    END INTO v_pagelink_id
+    FROM "ADMIN"."PageXLink";
+    INSERT INTO "ADMIN"."PageXLink" ("PageLinkID", "PageID", "LinkID")
       VALUES (v_pagelink_id, p_pageid, v_link_id);
 
   END LOOP;
@@ -101,24 +124,44 @@ BEGIN
 
   -- 6. Recorrer restricciones
 
-  FOR r_restriction IN c_restrictions LOOP
+  FOR i IN 1..p_restrictions.COUNT LOOP
 
-    -- 6.1 Insertar restricción
-    SELECT MAX(restrictionid) + 1 INTO v_restriction_id FROM restriction;
+    -- Check if restriction exists
+    SELECT "RestrictionId" INTO restriction_id
+    FROM "ADMIN"."Restriction"
+    WHERE "RestrictionLink" = p_restrictions(i);
 
-    INSERT INTO restriction (restrictionid, restrictionlink)
+    IF restriction_id IS NULL THEN
 
-    VALUES (v_restriction_id, r_restriction.column_value);
+      -- Restriction does not exist, insert new one
+      SELECT
+        CASE WHEN MAX("RestrictionId") IS NULL THEN 0
+             ELSE MAX("RestrictionId") + 1
+        END INTO v_restriction_id
+      FROM "ADMIN"."Restriction";
 
-    -- 6.2 Obtener nuevo ID
+      INSERT INTO "ADMIN"."Restriction"
+        ("RestrictionId", "RestrictionLink")
+      VALUES
+        (v_restriction_id, p_restrictions(i));
 
-    SELECT MAX(pagexrestrictions_id) + 1 INTO v_page_restriction_id FROM pagexrestrictions;
+    ELSE
+      -- Restriction exists, use existing ID
+      v_restriction_id := restriction_id;
 
-    -- 6.3 Insertar en tabla de relación
+    END IF;
 
-    INSERT INTO pagexrestrictions (pagexrestrictions_id, pageid, restrictionid)
+    -- Insert relation
+    SELECT
+      CASE WHEN MAX("PageXRestrictions_id") IS NULL THEN 0
+           ELSE MAX("PageXRestrictions_id") + 1
+      END INTO v_page_restriction_id
+    FROM "ADMIN"."PageXRestrictions";
 
-    VALUES (v_page_restriction_id, p_pageid, v_restriction_id);
+    INSERT INTO "ADMIN"."PageXRestrictions"
+      ("PageXRestrictions_id", "PageId", "RestrictionId")
+    VALUES
+      (v_page_restriction_id, p_pageid, v_restriction_id);
 
   END LOOP;
 

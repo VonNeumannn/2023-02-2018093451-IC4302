@@ -9,11 +9,14 @@ CREATE OR REPLACE PROCEDURE "INSERT_SITE" (
 AS
 BEGIN
 
-    SELECT MAX('siteid') + 1 INTO p_siteid FROM "ADMIN"."Site";
-  
+    SELECT
+    CASE WHEN MAX("Siteid") IS NULL THEN 0
+         ELSE MAX("Siteid") + 1
+    END INTO p_siteid FROM "ADMIN"."Site";
+
     INSERT INTO "Site" ("Siteid", "Fileid", "databaseName", "siteName", "Language")
     VALUES (p_siteid, p_fileid, p_databasename, p_sitename, p_language);
-  
+
 END INSERT_SITE;
 
 
