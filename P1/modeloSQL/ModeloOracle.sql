@@ -49,7 +49,6 @@ CREATE TABLE "Page" (
 FOREIGN KEY ("Siteid") REFERENCES "Site"("Siteid"),
 "Namespace" VARCHAR2(500),
 "WikipediaLink" VARCHAR2(1000),
-"Restriction" INT,
 "Title" VARCHAR2(500),
 "WikipediaGenerated" VARCHAR2(200)
 );
