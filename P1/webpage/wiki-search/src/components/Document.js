@@ -4,7 +4,8 @@ import '../App.css';
 import { createRoot } from 'react-dom';
 
 export default function Document(props) {
-    console.log(props.title+" + "+props.text)
+    //console.log(props.title+" + "+props.text)
+    console.log("------------------------",props.database)
     function resaltarFrase(texto, frase) {
         try {
             const expresionRegular = new RegExp(frase, 'gi'); // Agregar 'i' para hacerlo no case-sensitive
@@ -97,10 +98,11 @@ export default function Document(props) {
         let texto = textMerge(props.text) //buscarYCapturarContexto(props.text, props.searched)//encontrarContexto(props.text,props.searched);
         texto = resaltarFrase(texto, props.searched)
         const textoResaltado = texto
+        
         const daysHTML = [];
         daysHTML.push(
             <div key={title}>
-                <h2 className="title-document"><a href={"/result/" + title+"&"+props.database} target="_parent">{title}</a></h2>
+                <h2 className="title-document"><a href={"/result/" + title.replace(/ /g, "-")+"&"+props.database} target="_parent">{title}</a></h2>
                 <div dangerouslySetInnerHTML={{ __html: textoResaltado }} />
             </div>
 
