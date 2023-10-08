@@ -4,7 +4,6 @@ CREATE OR REPLACE PROCEDURE INSERT_PAGE_ALL(
   p_siteid INT,
   p_namespace VARCHAR2,
   p_wikipedialink VARCHAR2,
-  p_restriction INT,
   p_title VARCHAR2,
   p_wikipediagenerated VARCHAR2,
 
