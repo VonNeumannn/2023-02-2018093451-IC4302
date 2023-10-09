@@ -19,10 +19,10 @@ CREATE OR REPLACE PROCEDURE INSERT_PAGE_ALL(
   p_revisioncleantext CLOB,
 
   -- Lista de links
-  p_links string_varray,
+  p_links STRING_VARRAY,
 
   -- Lista de restricciones
-  p_restrictions string_varray
+  p_restrictions STRING_VARRAY
 
 )
 AS
@@ -88,6 +88,7 @@ BEGIN
   -- Por cada link en la lista
   FOR i IN 1..p_links.COUNT LOOP
 
+    BEGIN
     -- 5.1 Insertar link a su tabla
       SELECT "LinkID" INTO link_id
       FROM "ADMIN"."Link"
@@ -109,7 +110,22 @@ BEGIN
         v_link_id := link_id;
 
       END IF;
+    EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+      DBMS_OUTPUT.PUT_LINE('No existing link found');
 
+    WHEN TOO_MANY_ROWS THEN
+      DBMS_OUTPUT.PUT_LINE('Multiple links found');
+
+    WHEN DUP_VAL_ON_INDEX THEN
+      DBMS_OUTPUT.PUT_LINE('Primary key violation');
+
+    WHEN OTHERS THEN
+      DBMS_OUTPUT.PUT_LINE('Other error occurred');
+      ROLLBACK;
+      RAISE;
+
+    END;
     -- 5.2 Insertar en tabla de relaciÃƒÆ’Ã‚Â³n
     SELECT
     CASE WHEN MAX("PageLinkID") IS NULL THEN 0
@@ -120,7 +136,7 @@ BEGIN
       VALUES (v_pagelink_id, p_pageid, v_link_id);
 
   END LOOP;
-
+  COMMIT;
 
   -- 6. Recorrer restricciones
 
