@@ -268,7 +268,10 @@ def search():
                             "LastRevisionData.User.username",
                             "LastRevisionData.Redirect",
                             "Restrictions",
-                            "Links"
+                            "Links",
+                            "FileData.dbName",
+                            "siteName",
+                            "Language"
                             ],
                     "query": stringBusqueda
                 },
@@ -284,6 +287,7 @@ def search():
               "$project": {
                 "_id": 0,
                 "Title": 1,
+                "WikipediaLink":1,
                 "score": { "$meta": "searchScore" },
                 "highlights": { "$meta": "searchHighlights" }
                 }
@@ -294,35 +298,55 @@ def search():
                     "$searchMeta": {
                         "index":"full_text",
                         "facet": {
+                            "operator":{
+                                "text":{
+                                    "query":stringBusqueda,
+                                    "path":["Title","LastRevisionData.Text.NormalText",
+                                        "LastRevisionData.User.username",
+                                        "LastRevisionData.Redirect",
+                                        "Restrictions",
+                                        "Links",
+                                        "FileData.dbName",
+                                        "siteName",
+                                        "Language"
+                                    ]
+                                }
+                            },
                             "facets": {
                                 "PageBytes": {
                                     "type":"number",
                                     "path":"LastRevisionData.PageBytes",
-                                    "boundaries": [0, 1000, 10000, 50000],
+                                    "boundaries": [0, 50, 100, 1000, 10000, 50000],
+                                    "default":"otros"
                                     },
-                                "LastRevisionData.Redirect": {
+                                "Redirect": {
                                     "type": "string",
-                                    "path": "LastRevisionData.Redirect"
+                                    "path": "LastRevisionData.Redirect",
+                                    "numBuckets" : 4
                                 },
-                                "LastRevisionData.RevisionDate": {
+                                "RevisionDate": {
                                     "type": "date",
                                     "path": "LastRevisionData.RevisionDate",
                                     "boundaries": [datetime.strptime("2000-01-01T00:00:00.000Z", "%Y-%m-%dT%H:%M:%S.%fZ"),
                                                     datetime.strptime("2005-01-01T00:00:00.000Z", "%Y-%m-%dT%H:%M:%S.%fZ"),
                                                     datetime.strptime("2015-01-01T00:00:00.000Z", "%Y-%m-%dT%H:%M:%S.%fZ"),
                                                     datetime.strptime("2023-01-10T00:00:00.000Z", "%Y-%m-%dT%H:%M:%S.%fZ")],
+                                    "default":"otros"
                                 },
-                                "LastRevisionData.User.username": {
+                                "username": {
                                     "type": "string",
-                                    "path": "LastRevisionData.User.username"
+                                    "path": "LastRevisionData.User.username",
+                                    "numBuckets" : 4
                                 },
                                 "Links": {
                                     "type": "string",
-                                    "path": "Links"
+                                    "path": "Links",
+                                    "numBuckets" : 4
                                 },
                                 "Namespace": {
                                     "type": "string",
-                                    "path": "Namespace"
+                                    "path": "Namespace",
+                                    "numBuckets" : 4
                                 },
                                 "NumberLinks": {
                                     "type": "number",
@@ -331,23 +355,28 @@ def search():
                                 },
                                 "Restrictions": {
                                     "type": "string",
-                                    "path": "Restrictions"
+                                    "path": "Restrictions",
+                                    "numBuckets" : 4
                                 },
                                 "SiteDBName": {
                                     "type": "string",
-                                    "path": "SiteDBName"
+                                    "path": "FileData.dbName",
+                                    "numBuckets" : 4
                                 },
                                 "SiteLanguage": {
                                     "type": "string",
-                                    "path": "SiteLanguage"
+                                    "path": "FileData.SiteLanguage",
+                                    "numBuckets" : 4
                                 },
                                 "SiteName": {
                                     "type": "string",
-                                    "path": "SiteName"
+                                    "path": "FileData.siteName",
+                                    "numBuckets" : 4
                                 },
                                 "WikipediaLink": {
                                     "type": "string",
-                                    "path": "WikipediaLink"
+                                    "path": "WikipediaLink",
+                                    "numBuckets" : 4
                                 }
                             }
                         }
@@ -368,11 +397,11 @@ def search():
 
                 if len(pages) != 0:
                     title + "Search exitoso"
-                    dbLogs(title,timeStamp)
+                    #dbLogs(title,timeStamp)
                     return [pages,facets], 200 #AQUI debería enviar los facets tambien
                 else:
                     title + "Search fallido"
-                    dbLogs(title,timeStamp)
+                    #dbLogs(title,timeStamp)
                     return "Not found", 404
             else:
                 query2 = [{"$search":{
@@ -387,37 +416,23 @@ def search():
                 },
                 "highlight":{
                     "path":"LastRevisionData.Text.NormalText"
+                }
+                }
                 },
-                "count":{
-                    "type": "total"
-                }
-            }
-            },
-            {
-                "$facet": {}
-            },
-            {
-              "$project": {
-                "_id": 0,
-                "Title": 1,
-                "score": { "$meta": "searchScore" },
-                "highlights": { "$meta": "searchHighlights" },
-                }
-            }
-            ]
-                # Agregar los facets al pipeline
-                for facet in facetsParams: 
-                    nameFacet = facet["nombre"]
-                    valueFacet = facet["valor"]
-                    query2[1]["$facet"][nameFacet] = [
-                        {
-                            "$match": {nameFacet: valueFacet}
-                        },
-                        {
-                            "$count": "total"
-                        }
-                    ]
-                resultWithFacets = list(collection.aggregate(query))
+                {
+                    "$facet": {
+                        "docs":[
+                            {"limit":10}
+                        ],
+                        "meta":[
+                           {"$replaceWith":"$$SEARCH_META"},
+                           {"$limit":1}
+                        ]
+                    }
+                },
+                
+                ]
+                resultWithFacets = list(collection.aggregate(query2))
                 return resultWithFacets, 200
         except Exception as e:
             return(f"Error: {str(e)}")
@@ -483,13 +498,16 @@ def showDocument():
             results = collection.find_one({"Title":titleDoc})
             #results = list(collection.find(queryOne))
             wikiText = results.get("LastRevisionData", {}).get("Text", {}).get("wikiText")
+            wikiLink = results.get("WikipediaLink")
+            jsonWiki = {"wikiText":wikiText,
+                        "wikiLink":wikiLink}
             if wikiText is not None:
                 title + "Muestra el documento"
-                dbLogs(title,timeStamp)
-                return jsonify(wikiText), 200
+                #dbLogs(title,timeStamp)
+                return jsonify(jsonWiki), 200
             else:
                 title + "No muestra el documento"
-                dbLogs(title,timeStamp)
+                #dbLogs(title,timeStamp)
                 return "Not found", 404
         except Exception as e:
             return(f"Error: {str(e)}")

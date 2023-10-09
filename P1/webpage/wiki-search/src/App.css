@@ -12,8 +12,8 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  overflow-x: hidden;
-  overflow-y: hidden;
+  overflow-x: auto;
+  overflow-y: auto;
 }
 
 .login-frame {
@@ -31,6 +31,12 @@
 
 h1 {
   color: #363636;
+}
+
+#linkMain{
+  font-size:32px;
+  margin-top:2%;
+  font-weight:700;
 }
 
 .login-frame img {
@@ -244,7 +250,7 @@ h1 {
 }
 
 .gif-looking{
-  width: 50%;
+  width: 85%;
   height: auto;
 }
 
