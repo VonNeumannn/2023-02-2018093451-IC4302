@@ -1,0 +1,3 @@
+docker login
+docker build -t vonneumannn/api .
+docker push vonneumannn/api

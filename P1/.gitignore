@@ -35,3 +35,6 @@ override.tf.json
 terraform.rc
 
 **/.venv/*
+
+**/logs/*
+**/__pycache__/*
