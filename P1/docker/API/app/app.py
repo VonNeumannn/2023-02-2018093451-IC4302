@@ -254,7 +254,7 @@ def search():
             for r in rows:
                 clobText = r[0].read()
                 result_dict = {
-                'cleanText': clobText,
+                'cleanText': clobText[:500],
                 'title': r[1]
                 }
                 pages.append(result_dict)
