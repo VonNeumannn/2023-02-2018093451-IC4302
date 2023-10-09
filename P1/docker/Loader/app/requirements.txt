@@ -1,0 +1,13 @@
+bz2
+sys
+mwxml
+io 
+oci
+os
+time
+tempfile
+pymongo 
+certifi
+mwparserfromhell
+oracledb
+datetime 
