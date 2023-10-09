@@ -9,10 +9,12 @@ import json
 import datetime
 from datetime import datetime
 import certifi
+import oci
 import firebase_admin
 from firebase_admin import credentials
 from firebase_admin import firestore
 from google.cloud.firestore_v1.base_query import FieldFilter
+
 
 
 #Constants
@@ -41,7 +43,7 @@ def dbOracle_connection():
                                 dsn=cs
                                 )
     except Exception as error:
-        print(error)
+        return(error)
     return conn
 #Mongo connection
 def dbMongo_connection():
@@ -51,7 +53,7 @@ def dbMongo_connection():
         #stringConnMongo = MongoClient("mongodb+srv://admin:h99HYgct2cPpgVUwgaXruVY5V@cluster0.b5lzzny.mongodb.net/?retryWrites=true&w=majority")
         db = stringConnMongo["Wikipedia"]
     except Exception as error:
-        print(error)
+        return(error)
     return db
 
 #Logs insertion
@@ -205,6 +207,8 @@ def login():
                     return jsonify({"message":f"Correo o contraseña incorrecta",
                                 "status":0})
         except Exception as e:
+            title = f"Error: {str(e)}"
+            dbLogs(title,timeStamp)
             return e
 
 #Search by title
@@ -214,7 +218,7 @@ def search():
     tipoRecurso = request.args.get('tipoRecurso')
     #Comprobamos el tipo de DB
     if (int(tipoRecurso) == 1):
-        stringBusqueda = '%'+request.args.get('stringBusqueda')+'%'
+        stringBusqueda = request.args.get('stringBusqueda')
         #Autonomous DB
         conn = dbOracle_connection()
         cursor = conn.cursor()
@@ -223,26 +227,48 @@ def search():
         timeStamp = date_time.strftime("%Y-%m-%dT%H:%M:%S")
         try:
         #Request
-            sql = f"""EXEC ADMIN.BUSCAQUEDAGENERAL '{stringBusqueda}',0
-                    """
+            print(stringBusqueda)
+            sql = f"""
+            SELECT
+                LR."RevisionCleanText",
+                P."Title"
+            FROM
+                "ADMIN"."LastRevision" LR
+                INNER JOIN "ADMIN"."Page" P
+                ON LR."PageId" = P."Pageid"
+                INNER JOIN "ADMIN"."Site" S
+                ON P."Siteid" = S."Siteid"
+            WHERE
+                CONTAINS(LR."RevisionCleanText", '{stringBusqueda}', 1) > 0
+                OR CONTAINS(LR."Redirect", '{stringBusqueda}', 2) > 0
+                OR CONTAINS(P."Namespace", '{stringBusqueda}', 3) > 0
+                OR CONTAINS(P."WikipediaLink", '{stringBusqueda}', 4) > 0
+                OR CONTAINS(P."Title", '{stringBusqueda}', 5) > 0
+                OR CONTAINS(P."WikipediaGenerated", '{stringBusqueda}', 6) > 0
+                OR CONTAINS(S."siteName", '{stringBusqueda}', 7) > 0
+                OR CONTAINS(S."Language", '{stringBusqueda}', 8) > 0
+                """
             cursor.execute(sql)
             rows = cursor.fetchall()
             pages = []
             for r in rows:
+                clobText = r[0].read()
                 result_dict = {
-                'IDPAGINA': r[0],
-                'TITULO': r[1]
+                'cleanText': clobText,
+                'title': r[1]
                 }
                 pages.append(result_dict)
             if len(pages) != 0:
-                title + "Search exitoso"
+                title = "Search exitoso"
                 dbLogs(title,timeStamp)
                 return jsonify(pages), 200
             else:
-                title + "Search fallido"
+                title = "Search fallido"
                 dbLogs(title,timeStamp)
                 return "Not found", 404
         except Exception as e:
+            title = f"Error: {str(e)}"
+            dbLogs(title,timeStamp)
             return(f"Error: {str(e)}")
         finally:
             conn.close()
@@ -396,12 +422,12 @@ def search():
                     facets.append(facet)
 
                 if len(pages) != 0:
-                    title + "Search exitoso"
-                    #dbLogs(title,timeStamp)
+                    title = "Search exitoso"
+                    dbLogs(title,timeStamp)
                     return [pages,facets], 200 #AQUI debería enviar los facets tambien
                 else:
                     title + "Search fallido"
-                    #dbLogs(title,timeStamp)
+                    dbLogs(title,timeStamp)
                     return "Not found", 404
             else:
                 query2 = [{"$search":{
@@ -435,13 +461,15 @@ def search():
                 resultWithFacets = list(collection.aggregate(query2))
                 return resultWithFacets, 200
         except Exception as e:
+            title = f"Error: {str(e)}"
+            dbLogs(title,timeStamp)
             return(f"Error: {str(e)}")
 
 #See Document
 @app.route("/document", methods=['GET'])
 def showDocument():
     #Obtiene los parametros
-    titleDoc = request.args.get('titulo')
+    titleDoc = request.args.get('title')
     tipoRecurso = request.args.get('tipoRecurso')
     #logs
     date_time = datetime.now()
@@ -454,26 +482,35 @@ def showDocument():
         cursor = conn.cursor()
         #Request
         try:
-            sql = f"""SELECT P.Title, LR.NormalText
-                        FROM Page P
-                        INNER JOIN LastRevision LR
-                        ON LR.PageId = P.Pageid
-                        WHERE P.Title = {title}
+            sql = f"""SELECT LR."RevisionWikiText",
+                            P."WikipediaLink"
+                        FROM ADMIN."Page" P
+                        INNER JOIN ADMIN."LastRevision" LR
+                        ON LR."PageId" = P."Pageid"
+                        WHERE P."Title" = '{titleDoc}'
                         """
             cursor.execute(sql)
             rows = cursor.fetchall()
-            document = None
+            document = []
             for r in rows:
-                document = r
+                clobText = r[0].read()
+                result_dict = {
+                'cleanText': clobText,
+                'wikiLink': r[1]
+                }
+                document.append(result_dict)
+
             if document is not None:
-                title + "Search exitoso"
+                title = "Search exitoso"
                 dbLogs(title,timeStamp)
                 return jsonify(document), 200
             else:
-                title + "Search fallido"
+                title = "Search fallido"
                 dbLogs(title,timeStamp)
                 return "Not found", 404
         except Exception as e:
+            title = f"Error: {str(e)}"
+            dbLogs(title,timeStamp)
             return(f"Error: {str(e)}")
         finally:
             conn.close()
@@ -502,14 +539,16 @@ def showDocument():
             jsonWiki = {"wikiText":wikiText,
                         "wikiLink":wikiLink}
             if wikiText is not None:
-                title + "Muestra el documento"
-                #dbLogs(title,timeStamp)
+                title = "Muestra el documento"
+                dbLogs(title,timeStamp)
                 return jsonify(jsonWiki), 200
             else:
-                title + "No muestra el documento"
-                #dbLogs(title,timeStamp)
+                title = "No muestra el documento"
+                dbLogs(title,timeStamp)
                 return "Not found", 404
         except Exception as e:
+            title = f"Error: {str(e)}"
+            dbLogs(title,timeStamp)
             return(f"Error: {str(e)}")
 
 # Main

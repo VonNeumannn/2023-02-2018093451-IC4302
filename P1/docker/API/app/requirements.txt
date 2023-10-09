@@ -1,8 +1,11 @@
 flask
+flask_cors
 oracledb
 pymongo
 borneo
+datetime
 certifi
-firebase-admin
+firebase_admin
 google-cloud-firestore
-flask_cors
+oci
+base64
