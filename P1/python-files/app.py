@@ -268,7 +268,10 @@ def search():
                             "LastRevisionData.User.username",
                             "LastRevisionData.Redirect",
                             "Restrictions",
-                            "Links"
+                            "Links",
+                            "FileData.dbName",
+                            "siteName",
+                            "Language"
                             ],
                     "query": stringBusqueda
                 },
@@ -295,11 +298,26 @@ def search():
                     "$searchMeta": {
                         "index":"full_text",
                         "facet": {
+                            "operator":{
+                                "text":{
+                                    "query":stringBusqueda,
+                                    "path":["Title","LastRevisionData.Text.NormalText",
+                                        "LastRevisionData.User.username",
+                                        "LastRevisionData.Redirect",
+                                        "Restrictions",
+                                        "Links",
+                                        "FileData.dbName",
+                                        "siteName",
+                                        "Language"
+                                    ]
+                                }
+                            },
                             "facets": {
                                 "PageBytes": {
                                     "type":"number",
                                     "path":"LastRevisionData.PageBytes",
-                                    "boundaries": [0, 1000, 10000, 50000],
+                                    "boundaries": [0, 50, 100, 1000, 10000, 50000],
+                                    "default":"otros"
                                     },
                                 "Redirect": {
                                     "type": "string",
@@ -313,6 +331,7 @@ def search():
                                                     datetime.strptime("2005-01-01T00:00:00.000Z", "%Y-%m-%dT%H:%M:%S.%fZ"),
                                                     datetime.strptime("2015-01-01T00:00:00.000Z", "%Y-%m-%dT%H:%M:%S.%fZ"),
                                                     datetime.strptime("2023-01-10T00:00:00.000Z", "%Y-%m-%dT%H:%M:%S.%fZ")],
+                                    "default":"otros"
                                 },
                                 "username": {
                                     "type": "string",
@@ -346,7 +365,7 @@ def search():
                                 },
                                 "SiteLanguage": {
                                     "type": "string",
-                                    "path": "FileData.Language",
+                                    "path": "FileData.SiteLanguage",
                                     "numBuckets" : 4
                                 },
                                 "SiteName": {
@@ -397,37 +416,23 @@ def search():
                 },
                 "highlight":{
                     "path":"LastRevisionData.Text.NormalText"
-                },
-                "count":{
-                    "type": "total"
                 }
                 }
                 },
                 {
-                    "$facet": {}
-                },
-                {
-                "$project": {
-                    "_id": 0,
-                    "Title": 1,
-                    "score": { "$meta": "searchScore" },
-                    "highlights": { "$meta": "searchHighlights" },
+                    "$facet": {
+                        "docs":[
+                            {"limit":10}
+                        ],
+                        "meta":[
+                           {"$replaceWith":"$$SEARCH_META"},
+                           {"$limit":1}
+                        ]
                     }
-                }
+                },
+                
                 ]
-                # Agregar los facets al pipeline
-                for facet in facetsParams: 
-                    nameFacet = facet["nombre"]
-                    valueFacet = facet["valor"]
-                    query2[1]["$facet"][nameFacet] = [
-                        {
-                            "$match": {nameFacet: valueFacet}
-                        },
-                        {
-                            "$count": "total"
-                        }
-                    ]
-                resultWithFacets = list(collection.aggregate(query))
+                resultWithFacets = list(collection.aggregate(query2))
                 return resultWithFacets, 200
         except Exception as e:
             return(f"Error: {str(e)}")
