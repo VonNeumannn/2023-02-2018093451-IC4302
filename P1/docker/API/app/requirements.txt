@@ -5,3 +5,4 @@ borneo
 certifi
 firebase-admin
 google-cloud-firestore
+flask_cors

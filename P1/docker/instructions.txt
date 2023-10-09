@@ -1,3 +1,3 @@
 docker login
-docker build -t nereo08/helloflask .
-docker push nereo08/helloflask
+docker build -t vonneumannn/api .
+docker push vonneumannn/api
