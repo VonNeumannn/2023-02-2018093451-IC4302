@@ -11,3 +11,4 @@ certifi
 mwparserfromhell
 oracledb
 datetime 
+unittest

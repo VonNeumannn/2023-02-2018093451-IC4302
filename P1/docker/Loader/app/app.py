@@ -12,7 +12,7 @@ import mwparserfromhell
 import oracledb
 from datetime import datetime
 
-# Llave y datos para conectar con Oracle Cloud Infrastructure
+# LLave y datos para conectar con Oracle Cloud Infrastructure
 #--------------------------------------------------------------------------------------------------------------------------
 config = {
   "key_content": """-----BEGIN PRIVATE KEY-----
@@ -232,7 +232,6 @@ def process_file(file_obj, opcionAlmacenamiento, filename):
         processed['FileData'] = {'dbName': dump.site_info.dbname, 'siteName': dump.site_info.name, 'Language': "English" }
 
         print()
-        print()
         print('------------------------------------------')
         print("Se esta procesando la página -->" + processed["Title"])
 
@@ -351,7 +350,7 @@ def insertFileSQL(filedata):
     return site_id
 
 # Para insertar los datos de un page a las tablas de la base autonomous
-# Se recibe el diccionario de datos, se asigna en variables y se llama al procedimiento INSERT_PAGE_ALL
+# Se recibe el diccionario de datos, se asigna en variables y se llama al procedimiento INSERT_PAGE_ALL, INSERT_LINK e INSERT_Restriction
 # Este se encarga de ingresar cada dato en sus respectivas tablas
 def insertarPageSQL(page_data, siteId):
 
@@ -379,13 +378,6 @@ def insertarPageSQL(page_data, siteId):
     conn = dbOracle_connection()
     cursor = conn.cursor()
 
-    # Se crea este objeto especial de nuestra base para listas de strings
-    type_obj = conn.gettype("STRING_VARRAY")
-    linksVA = type_obj.newobject()
-    linksVA.extend(links)
-
-    resVA = type_obj.newobject()
-    resVA.extend(restrictions)
     try:
         # Call procedure
         cursor.callproc('INSERT_PAGE_ALL', [
@@ -401,14 +393,23 @@ def insertarPageSQL(page_data, siteId):
             redirect,
             page_bytes,
             revision_date,
-            clean_text,
-            linksVA,
-            resVA
+            clean_text
         ])
         conn.commit()
+
+        # Para guardar todos los datos de los links de las páginas
+        for link in links:
+            cursor.callproc('INSERT_LINK', [link,pageid])
+            conn.commit()
+
+        for restriction in restrictions:
+            cursor.callproc('INSERT_RESTRICTION', [restriction,pageid])
+            conn.commit()
+
     except:
         print("ERROR INGRESANDO PÁGINA")
         print(sys.exc_info()[1])
+        print("Wikiuser = " + user_name)
     cursor.close()
     conn.close()
 
@@ -478,5 +479,7 @@ def dataLoader():
 
         # Se espera 30 segundos antes de revisar de nuevo si hay un archivo a procesar
         time.sleep(30)
-        
-dataLoader()
+
+if __name__ == '__main__':
+    dataLoader()
+

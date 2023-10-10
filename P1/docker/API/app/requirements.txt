@@ -8,3 +8,6 @@ certifi
 firebase_admin
 google-cloud-firestore
 oci
+unittest
+requests
+os
