@@ -22,16 +22,6 @@ app = Flask(__name__)
 # Configura CORS para toda la aplicación
 CORS(app)
 
-
-"""
-TODO:
--> Send data to UI
--> Insert into log DB
-    #el bag_info va el json(log) completo, md5 a todo el doc para el logId
-    #primera busqueda sin facets
-    #iterativo por cada facet
-    #mongo stage
-"""
 #Oracle connection
 def dbOracle_connection():
     cs='''(description= (retry_count=20)(retry_delay=3)(address=(protocol=tcps)(port=1522)(host=adb.us-ashburn-1.oraclecloud.com))(connect_data=(service_name=g25fe25c70e5806_ic4302_high.adb.oraclecloud.com))(security=(ssl_server_dn_match=yes)))'''
@@ -50,7 +40,6 @@ def dbMongo_connection():
     ca = certifi.where()
     try:
         stringConnMongo = MongoClient("mongodb+srv://admin:d10bWGsGGZByJuUw@cluster0.hd2zdo3.mongodb.net/?retryWrites=true&w=majority", tlsCAFile=ca)
-        #stringConnMongo = MongoClient("mongodb+srv://admin:h99HYgct2cPpgVUwgaXruVY5V@cluster0.b5lzzny.mongodb.net/?retryWrites=true&w=majority")
         db = stringConnMongo["Wikipedia"]
     except Exception as error:
         return(error)
