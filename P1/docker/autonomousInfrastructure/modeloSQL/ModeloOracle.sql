@@ -4,7 +4,6 @@ DROP TABLE "LastRevision";
 DROP TABLE "Page";
 DROP TABLE "Link";
 DROP TABLE "Restriction";
-DROP TABLE "wikiUser";
 DROP TABLE "Site";
 DROP TABLE "File";
 
@@ -22,21 +21,10 @@ FOREIGN KEY ("Fileid") REFERENCES "File"("Fileid"),
 "Language" VARCHAR2(25)
 );
 
-CREATE INDEX "siteIndex" ON "Site" ("databaseName", "siteName");
-
-CREATE TABLE "wikiUser" (
-"userId" INT PRIMARY KEY,
-"Username" VARCHAR2(200)
-);
-
-CREATE INDEX "wikiuserIndex" ON "wikiUser" ("Username");
-
 CREATE TABLE "Restriction" (
 "RestrictionId" INT PRIMARY KEY,
 "RestrictionLink" VARCHAR2(1000)
 );
-
-CREATE INDEX "restrictionIndex" ON "Restriction" ("RestrictionLink");
 
 CREATE TABLE "Link" (
 "LinkID" INT PRIMARY KEY,
@@ -50,15 +38,13 @@ FOREIGN KEY ("Siteid") REFERENCES "Site"("Siteid"),
 "Namespace" VARCHAR2(500),
 "WikipediaLink" VARCHAR2(1000),
 "Title" VARCHAR2(500),
-"WikipediaGenerated" VARCHAR2(200)
+"WikipediaGenerated" VARCHAR2(200),
+"Rating" INT DEFAULT 0
 );
-
-CREATE INDEX "pageIndex" ON "Page" ("Namespace");
 
 CREATE TABLE "LastRevision" (
 "Revision_id" INT PRIMARY KEY,
-"wikiUserId" INT,
-FOREIGN KEY ("wikiUserId") REFERENCES "wikiUser"("userId"),
+"Username" VARCHAR2(200),
 "RevisionWikiText" CLOB,
 "Redirect" VARCHAR2(1000) NULL,
 "PageBytes" INT,
@@ -84,4 +70,4 @@ FOREIGN KEY ("PageID") REFERENCES "Page"("Pageid"),
 FOREIGN KEY ("LinkID") REFERENCES "Link"("LinkID")
 );
 
-CREATE OR REPLACE TYPE string_varray AS VARRAY(4000) OF VARCHAR2(1000);
+CREATE OR REPLACE TYPE "STRING_VARRAY2" AS VARRAY(2000) OF VARCHAR2(1000);

@@ -132,7 +132,6 @@ def parse_text(wiki_text):
 def get_links(text):
 
     parsed = mwparserfromhell.parse(text)
-
     links = []
 
     # Encontrar todos los wikilinks
@@ -224,6 +223,9 @@ def process_file(file_obj, opcionAlmacenamiento, filename):
 
     # Una vez se almaceno el nombre del archivo se pasa a procesar y almacenar cada una de las páginas
     # Por cada página en el dump
+
+    # Como son muchas páginas se puede configurar que se inserte cierta cantidad por archivo
+    cont = 0
     for page in dump:
 
         # Se procesa la página
@@ -237,8 +239,9 @@ def process_file(file_obj, opcionAlmacenamiento, filename):
 
         # Se quiere guardar dependiendo de la opción
         if opcionAlmacenamiento == 'AMBOS':
-            insertarPageMongo(processed)
             insertarPageSQL(processed, SQLsiteID)
+            insertarPageMongo(processed)
+
 
         elif opcionAlmacenamiento == "SQL":
             insertarPageSQL(processed, SQLsiteID)
@@ -246,7 +249,12 @@ def process_file(file_obj, opcionAlmacenamiento, filename):
         elif opcionAlmacenamiento == 'MONGO':
             insertarPageMongo(processed)
 
+        cont+=1
+        if cont == 30:
+            break
     print("Se procesaron todas las páginas")
+    print()
+    print('------------------------------------------')
 
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -316,6 +324,21 @@ def insertarFileMongo(page_data):
 # Este diccionaro tendrá la estructura del diccionario generado por la funcion procees_page()
 def insertarPageMongo(datos):
 
+    # Se agregan número de links y hasredirection al documento
+
+    datos['LinkNumber'] = len(datos['Links'])
+    if datos['LastRevisionData']['Redirect'] != None:
+        datos['LastRevisionData']['hasRedirect'] = "True"
+    else:
+        datos['LastRevisionData']['hasRedirect'] = "False"
+
+    # Para las votaciones también se agrega un atributo rating, comienza como 0
+    datos['Rating'] = 0
+
+    # El atributo date se cambia de string a datetime
+    datos['LastRevisionData']['RevisionDate'] = datetime.strptime(datos['LastRevisionData']['RevisionDate'], "%Y-%m-%dT%H:%M:%SZ")
+
+    # Se conecta y se inserta todo el documento
     client = dbMongo_connection()
     db = client["Wikipedia"]
     collection = db["Pages"]
@@ -365,7 +388,6 @@ def insertarPageSQL(page_data, siteId):
     # Restrictions es una lista
     restrictions = page_data['Restrictions']
     # Revision User
-    user_id = page_data['LastRevisionData']['User']['UserID']
     user_name = page_data['LastRevisionData']['User']['username']
     revision_text = page_data['LastRevisionData']['Text']['wikiText']
     clean_text = page_data['LastRevisionData']['Text']['NormalText']
@@ -387,7 +409,6 @@ def insertarPageSQL(page_data, siteId):
             wikilink,
             pagetitle,
             generated,
-            user_id,
             user_name,
             revision_text,
             redirect,
@@ -409,7 +430,6 @@ def insertarPageSQL(page_data, siteId):
     except:
         print("ERROR INGRESANDO PÁGINA")
         print(sys.exc_info()[1])
-        print("Wikiuser = " + user_name)
     cursor.close()
     conn.close()
 
@@ -477,9 +497,12 @@ def dataLoader():
 
             os.remove(file)
 
+        print()
         # Se espera 30 segundos antes de revisar de nuevo si hay un archivo a procesar
         time.sleep(30)
 
 if __name__ == '__main__':
     dataLoader()
+
+
 
