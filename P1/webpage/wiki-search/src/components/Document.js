@@ -2,10 +2,11 @@ import React, { useRef, useEffect } from "react";
 import '../App.css';
 
 import { createRoot } from 'react-dom';
+import { useNavigate } from 'react-router-dom';
 
 export default function Document(props) {
     //console.log(props.title+" + "+props.text)
-    console.log("------------------------",props.database)
+    const navigate=props.navigate
     function resaltarFrase(texto, frase) {
         try {
             const expresionRegular = new RegExp(frase, 'gi'); // Agregar 'i' para hacerlo no case-sensitive
@@ -90,6 +91,12 @@ export default function Document(props) {
         return contexto;
     }
 
+    function cambiarURL(nuevaURL) {
+        //const nuevaURL = '/nueva-ruta'; // La nueva URL que deseas utilizar
+        //history.pushState(null, null, nuevaURL);
+        navigate(nuevaURL)
+      }
+
     const title = props.title;
 
     const containerRef = useRef(null);
@@ -102,7 +109,7 @@ export default function Document(props) {
         const daysHTML = [];
         daysHTML.push(
             <div key={title}>
-                <h2 className="title-document"><a href={"/result/" + title.replace(/ /g, "-")+"&"+props.database} target="_parent">{title}</a></h2>
+                <h2 className="document-title"><span onClick={()=>cambiarURL("/result/" + title.replace(/ /g, "-")+"&"+props.database)}>{title}</span></h2>
                 <div dangerouslySetInnerHTML={{ __html: textoResaltado }} />
             </div>
 

@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import axios from 'axios'
 
 export default function DocumentComplete() {
-
         const [myJson, setJson] = useState({});
         const [isLoading, setLoading] = useState(true);
       
@@ -14,11 +13,13 @@ export default function DocumentComplete() {
         const ultimaParteDeLaURL = partesDeLaURL.pop();
         const titulo = ultimaParteDeLaURL.split('&')[0];
         const base = ultimaParteDeLaURL.split('&')[1];
+        const tituloCambiado=titulo.replace(/-/g, " ")
+        document.title = tituloCambiado
       
         useEffect(() => {
           const apiUrl =
             "http://127.0.0.1:5000/document?titulo=" +
-            titulo.replace(/-/g, " ") +
+            tituloCambiado +
             "&tipoRecurso=" +
             base;
       
@@ -28,6 +29,7 @@ export default function DocumentComplete() {
             .then((response) => {
               if (response.status) {
                 setJson(response.data);
+                console.log(response);
               } else {
                 alert("Error en la solicitud");
               }
@@ -67,37 +69,10 @@ function resaltarFrase(texto, frase) {
     }
 }
 
-    /*function wikiTextToHtml(wikiText) {
-        // Encuentra y reemplaza las marcas de negrita ('''')
-        wikiText = wikiText.replace(/'''(.*?)'''/g, '<strong>$1</strong>');
+  function convertFromWikiTextToHtml(wikiText) {
+    
+  }
 
-        // Encuentra y reemplaza las marcas de cursiva (''')
-        wikiText = wikiText.replace(/''(.*?)''/g, '<em>$1</em>');
-
-        // Encuentra y reemplaza los encabezados de nivel 5 (====== Título ======)
-        wikiText = wikiText.replace(/======\s(.*?)\s======/g, '<h6>$1</h6>');
-
-        // Encuentra y reemplaza los encabezados de nivel 4 (===== Título =====)
-        wikiText = wikiText.replace(/=====\s(.*?)\s=====/g, '<h5>$1</h5>');
-
-        // Encuentra y reemplaza los encabezados de nivel 3 (==== Título ====)
-        wikiText = wikiText.replace(/====\s(.*?)\s====/g, '<h4>$1</h4>');
-
-        // Encuentra y reemplaza los encabezados de nivel 2 (=== Título ===)
-        wikiText = wikiText.replace(/===\s(.*?)\s===/g, '<h3>$1</h3>');
-
-
-        // Encuentra y reemplaza los encabezados de nivel 1 (== Título ==)
-        wikiText = wikiText.replace(/==\s(.*?)\s==/g, '<h2>$1</h2>');
-
-
-        // Encuentra y reemplaza los enlaces ([[Texto|URL]])
-        wikiText = wikiText.replace(/\[\[(.*?)\|(.*?)\]\]/g, '<a href="$2\&2">$1</a>');
-
-        // ... (otros reemplazos)
-
-        return wikiText;
-    }*/
     function wikiToHtml(wikiText) {
         let htmlText = wikiText;
     

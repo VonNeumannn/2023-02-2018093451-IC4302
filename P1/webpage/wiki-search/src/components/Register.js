@@ -6,47 +6,75 @@ import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 
 export default function Register() {
+  document.title = "Registro"
   const navigate = useNavigate();
   const handleAccess = () => {
     // Obtén una referencia al campo de entrada y al párrafo de mensaje de error
-    var inputNombre = document.getElementById("name-text");
-    var inputApellido = document.getElementById("last-name-text");
-    var inputCorreo = document.getElementById("email-text");
-    var inputContra = document.getElementById("password-text");
+    var inputNombre = document.getElementById("name-text").value;
+    var inputApellido = document.getElementById("last-name-text").value;
+    var inputCorreo = document.getElementById("email-text").value;
+    var inputContra = document.getElementById("password-text").value;
     var mensajeError = document.getElementById("mensaje-error");
     var mensajeError2 = document.getElementById("mensaje-error2");
     var mensajeError3 = document.getElementById("mensaje-error3");
     var mensajeError4 = document.getElementById("mensaje-error4");
 
+    mensajeError.textContent = ""
+    mensajeError2.textContent = ""
+    mensajeError3.textContent = ""
+    mensajeError4.textContent = ""
+
     // Agrega un controlador de eventos para el evento 'input' (cada vez que se escriba algo en el campo)
     const apiUrl = "http://127.0.0.1:5000/register";
 
     // Datos que deseas enviar en la solicitud POST
-    const data = {
-      name: inputNombre.value,
-      lastName: inputApellido.value,
-      email: inputCorreo.value,
-      password: inputContra.value,
-    };
+    if (inputNombre.trim() != ""
+      && inputApellido.trim() != ""
+      && inputCorreo.trim() != ""
+      && inputContra.trim() != "") {
+      const data = {
+        name: inputNombre,
+        lastName: inputApellido,
+        email: inputCorreo,
+        password: inputContra
+      };
 
-    // Realizar la solicitud POST
-    axios
-      .post(apiUrl, data)
-      .then((response) => {
-        console.log(response.data);
+      // Realizar la solicitud POST
+      axios
+        .post(apiUrl, data)
+        .then((response) => {
+          console.log(response.data);
           if (response.data.status) {
-          alert(response.data.message);
-          navigate("/");
-        } else {
-          alert(response.data.message);
-        }
-      })
-      .catch((error) => {
-        // Si ocurre un error en la solicitud
-        console.error("Error en la solicitud:", error);
-      });
+            alert(response.data.message);
+            navigate("/");
+          } else {
+            alert(response.data.message);
+          }
+        })
+        .catch((error) => {
+          // Si ocurre un error en la solicitud
+          console.error("Error en la solicitud:", error);
+        });
+    } else {
+      if (inputNombre.trim() === "") {
+        mensajeError.textContent = "El campo 'Nombre' es necesario";
 
-    //navigate('/search');
+      }
+
+      if (inputApellido.trim() === "") {
+        mensajeError2.textContent = "El campo 'Apellido' es necesario";
+
+      }
+      if (inputContra.trim() === "") {
+        mensajeError4.textContent = "El campo 'Contraseña' es necesario";
+
+      }
+      if (inputCorreo.trim() === "") {
+        mensajeError3.textContent = "El campo 'Correo' es necesario";
+
+      }
+    }
+
   };
   useEffect(() => {
     // Obtén una referencia al campo de entrada y al párrafo de mensaje de error
@@ -66,7 +94,7 @@ export default function Register() {
 
       // Realiza la validación, por ejemplo, si el campo no está vacío
       if (valor === "") {
-        mensajeError.textContent = "El campo nombre es requerido.";
+        mensajeError.textContent = "El campo 'Nombre' es requerido.";
       } else {
         mensajeError.textContent = ""; // Limpia el mensaje de error si la validación pasa
       }
@@ -78,7 +106,7 @@ export default function Register() {
 
       // Realiza la validación, por ejemplo, si el campo no está vacío
       if (valor === "") {
-        mensajeError2.textContent = "El campo nombre es requerido.";
+        mensajeError2.textContent = "El campo 'Apellido' es requerido.";
       } else {
         mensajeError2.textContent = ""; // Limpia el mensaje de error si la validación pasa
       }
@@ -90,7 +118,7 @@ export default function Register() {
 
       // Realiza la validación, por ejemplo, si el campo no está vacío
       if (valor === "") {
-        mensajeError3.textContent = "El campo nombre es requerido.";
+        mensajeError3.textContent = "El campo 'Correo' es requerido.";
       } else {
         mensajeError3.textContent = ""; // Limpia el mensaje de error si la validación pasa
       }
@@ -102,14 +130,14 @@ export default function Register() {
 
       // Realiza la validación, por ejemplo, si el campo no está vacío
       if (valor === "") {
-        mensajeError4.textContent = "El campo nombre es requerido.";
+        mensajeError4.textContent = "El campo 'Contraseña' es requerido.";
       } else {
         mensajeError4.textContent = ""; // Limpia el mensaje de error si la validación pasa
       }
     });
   }, [navigate]);
 
-  document.title = "Registro";
+
 
   return (
     <div className="login-screen-view">
