@@ -132,7 +132,6 @@ def parse_text(wiki_text):
 def get_links(text):
 
     parsed = mwparserfromhell.parse(text)
-
     links = []
 
     # Encontrar todos los wikilinks
@@ -251,9 +250,11 @@ def process_file(file_obj, opcionAlmacenamiento, filename):
             insertarPageMongo(processed)
 
         cont+=1
-        if cont == 400:
+        if cont == 30:
             break
     print("Se procesaron todas las páginas")
+    print()
+    print('------------------------------------------')
 
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -327,9 +328,9 @@ def insertarPageMongo(datos):
 
     datos['LinkNumber'] = len(datos['Links'])
     if datos['LastRevisionData']['Redirect'] != None:
-        datos['LastRevisionData']['hasRedirect'] = True
+        datos['LastRevisionData']['hasRedirect'] = "True"
     else:
-        datos['LastRevisionData']['hasRedirect'] = False
+        datos['LastRevisionData']['hasRedirect'] = "False"
 
     # Para las votaciones también se agrega un atributo rating, comienza como 0
     datos['Rating'] = 0
@@ -496,9 +497,12 @@ def dataLoader():
 
             os.remove(file)
 
+        print()
         # Se espera 30 segundos antes de revisar de nuevo si hay un archivo a procesar
         time.sleep(30)
 
 if __name__ == '__main__':
     dataLoader()
+
+
 
