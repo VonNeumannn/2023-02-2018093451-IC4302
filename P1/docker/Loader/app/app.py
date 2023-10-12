@@ -1,4 +1,5 @@
 import bz2
+import sys
 import mwxml
 from io import BytesIO
 import oci
@@ -9,10 +10,10 @@ from pymongo import MongoClient
 import certifi
 import mwparserfromhell
 import oracledb
-from oracledb import LOB
 from datetime import datetime
 
-
+# LLave y datos para conectar con Oracle Cloud Infrastructure
+#--------------------------------------------------------------------------------------------------------------------------
 config = {
   "key_content": """-----BEGIN PRIVATE KEY-----
 MIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQCyeqoVhQp5uJUk
@@ -48,17 +49,18 @@ rvLR0LOLOhVbGpy/8zzQ/w==
   "region": "us-ashburn-1"
 }
 
-# FUNCIONES DE CONEXIÓN A ORACLE
+# FUNCIONES Para manejo de Objetos del Bucket
 #-----------------------------------------------------------------------------------------------------------------------
-# Function to connect to the Oracle bucket
+# Funcion para conectar con el bucket de oracle
+# Usa los datos de configuracion definidos y establece una conexión con el bucket
 def connect_Bucket():
     oci.config.validate_config(config)
     object_storage = oci.object_storage.ObjectStorageClient(config)
-    print("Connected to the object storage")
     return object_storage
 
-# This function returns a list of all the object names in the bucket
-# This is useful to check if a new file has been uploaded and needs to be processed
+# Esta función regresa una lista de todos los archivos del bucket
+# Input: Una conexión con el bucket y el nombre del mismo
+# Output: Lista de objetos del bucket
 def get_files_in_bucket(object_storage,bucket_name):
     namespace = object_storage.get_namespace().data # The OCI namespace for your tenancy
 
@@ -67,6 +69,9 @@ def get_files_in_bucket(object_storage,bucket_name):
 
     return objects
 
+# Esta función obtiene los nombres de todos los objetos en la lista del bucket, importante para comparar con las bases
+# Recibe una lista de objetos generada por  get_files_in_bucket()
+# Retorna una lista solo con los nombres de esos objetos
 def get_bucket_objNames(objectlist):
     names = []
     for obj in objectlist:
@@ -74,36 +79,41 @@ def get_bucket_objNames(objectlist):
 
     return names
 
-# This function receives an object name
-# and downloads it from the bucket to decompress it
-# returns the downloaded file
+# Esta función recibe el nombre de un elemento específico en el bucket
+# Lo descarga para que posteriormente sea descomprimido
+# Se guarda en un archivo temporal
+# Se regresa el nombre del archivo temporal en el sistema
 def downloadFile(object_storage, bucket_name, object_name):
     namespace = object_storage.get_namespace().data
     obj = object_storage.get_object(namespace, bucket_name, object_name)
 
-    # Write object bytes to temp file
+    # Bytes del objeto a archivo temporal
     temp_file = tempfile.NamedTemporaryFile(delete=False)
     temp_file.write(obj.data.content)
     temp_file.close()
 
     return temp_file.name
 
-# Function to decompress a bz2 file
-# It receives a bz2 file, and decompresses it into a binary file
-# Returns the decompressed binary file
+# Función para descomprimir un archivo con bz2,
+# Recibe un bz2 y regresa un archivo binario descomprimido
+# En lugar de subir descomprimido al bucket se descomprime aqui para ahorrar tiempo
 def decompress_file(input_file):
     with bz2.open(input_file, 'rb') as f_in:
         return f_in.read()
 
 #-----------------------------------------------------------------------------------------------------------------------
-# Para Parsear texto y procesar las wikipages del documento
+# FUNCIONES PARA PARSEAR TEXTO DEL DUMP
+#-----------------------------------------------------------------------------------------------------------------------
+
+# Se recibe una página del dump y se obtienen los datos de su última modificación
 def get_last_revision(page):
     last_rev = None
 
+    # Por cada revisión de la página
     for revision in page:
-        # Each iteration is a page revision
         last_rev = revision
 
+    # El último valor asignado a la variable se retorna
     return last_rev
 
 def parse_text(wiki_text):
@@ -114,37 +124,43 @@ def parse_text(wiki_text):
 
     return plain_text
 
+# Para obtener todos los links del texto
+# En lugar de tener que usar otro documento, usamos mwparserfromhell para obtener los links usando el wikitext del page
+# Se recibe el wikitext
+# Se retorna una lista con cada uno de los links
+# MEJORAR: Se debe hacer que se remuevan todos los espacios vacíos del link
 def get_links(text):
 
     parsed = mwparserfromhell.parse(text)
 
     links = []
 
-    # Find all wikilinks
+    # Encontrar todos los wikilinks
     for link in parsed.filter_wikilinks():
-        # Get link target page title
+        # Obtener titulo del link
         title = link.title.strip()
 
-        # Generate full URL
+        # Generar URL
         url = f'https://en.wikipedia.org/wiki/{title}'
 
         links.append(url)
 
     return links
 
+# Función para extraer todos los datos relacionados con una página en el dump
+# Recibe el dump.Page y extrae sys datos usando mwxml y mwparserfromhell
+# Regresa un diccionario que contiene todos sus datos
 def process_page(page):
 
   page_data = {}
-
-  # Page metadata
   page_data["Title"] = page.title
   page_data["PageId"] = page.id
   page_data["Namespace"] = page.namespace
 
-  # Get last revision
+  # Se obtienen los datos de la última revisión
   last_revision = get_last_revision(page)
 
-  # Last revision data
+  # Se guardan en el diccionario
   page_data['LastRevisionData'] = {
     'User': {
       'UserID': last_revision.user.id,
@@ -159,46 +175,67 @@ def process_page(page):
     'RevisionDate': str(last_revision.timestamp)
   }
 
-  # Other page data
+  # Otros datos
   page_data['Restrictions'] = page.restrictions
   page_data['Links'] = get_links(last_revision.text)
 
   page_data['WikipediaLink'] = f'https://en.wikipedia.org/wiki/{page.title}'
-
   page_data['WikipediaGenerated'] = f'http://en.wikipedia.org/?curid={page.id}'
 
   return page_data
 
+
+# Para procesar un archivo completo de los XML Dumps
+# Esta función procesa todas las páginas dentro del dump y las ingresa en una o ambas bases de datos
+# Recibe el objeto del dump
+# Recibe una opción de almacenamiento, esto determina la base donde se guarda "SQL", "MONGO" y "AMBOS"
+# Recibe el nombre del archivo que se va a procesar
 def process_file(file_obj, opcionAlmacenamiento, filename):
-    # Decompress entire file
+
+    # Se descomprime el archivo
     binary_data = decompress_file(file_obj)
-    # Convert binary chunk to BytesIO
+    # Lo convierte en datos que se puedan leer con mwxml.Dump
     bytes_io = BytesIO(binary_data)
 
-    # Pass to mwxml
     dump = mwxml.Dump.from_file(bytes_io)
+
+    # Se determinan datos generales del archivo como nombre, dbname, sitename, Language
     filename_Dat = {"Filename": filename}
     filename_Dat['FileData'] = {'dbName': dump.site_info.dbname, 'siteName': dump.site_info.name, 'Language': "English"}
+
+    # Al crear un site en SQL se regresa su id para asignarlo a todos los pages
     SQLsiteID = None
+
+    # En esta sección se ingresa el nombre del archivo a procesar en la base
+    # Esto permite luego revisar si los datos de un archivo ya han sido ingresados a una de las bases
+
+    # Si solo se almacena en la base SQL
     if opcionAlmacenamiento == "SQL":
         SQLsiteID = insertFileSQL(filename_Dat)
 
+    # Si solo se almacena en la base MONGO
     elif opcionAlmacenamiento == 'MONGO':
         insertarFileMongo(filename_Dat)
 
+    # Si se quiere almacenar en ambas
     else:
         SQLsiteID = insertFileSQL(filename_Dat)
         insertarFileMongo(filename_Dat)
 
-    print(SQLsiteID)
+    # Una vez se almaceno el nombre del archivo se pasa a procesar y almacenar cada una de las páginas
+    # Por cada página en el dump
     for page in dump:
+
+        # Se procesa la página
         processed = process_page(page)
+        # Se agregan datos del archivo (Se usan para guardarlos en Mongo)
         processed['FileData'] = {'dbName': dump.site_info.dbname, 'siteName': dump.site_info.name, 'Language': "English" }
 
         print()
-        print()
         print('------------------------------------------')
-        print(processed)
+        print("Se esta procesando la página -->" + processed["Title"])
+
+        # Se quiere guardar dependiendo de la opción
         if opcionAlmacenamiento == 'AMBOS':
             insertarPageMongo(processed)
             insertarPageSQL(processed, SQLsiteID)
@@ -214,7 +251,9 @@ def process_file(file_obj, opcionAlmacenamiento, filename):
 
 #-----------------------------------------------------------------------------------------------------------------------
 # CONECTIVIDAD Y BASES DE DATOS
+#-----------------------------------------------------------------------------------------------------------------------
 # Para conectar con Mongo
+# Regresa una conexión con la base mongo
 def dbMongo_connection():
     ca = certifi.where()
     stringConnMongo = None
@@ -225,6 +264,7 @@ def dbMongo_connection():
     return stringConnMongo
 
 #Para conectar con Autonomous Database
+# Regresa una conexión con la base oracle
 def dbOracle_connection():
     cs='''(description= (retry_count=20)(retry_delay=3)(address=(protocol=tcps)(port=1522)(host=adb.us-ashburn-1.oraclecloud.com))(connect_data=(service_name=g25fe25c70e5806_ic4302_high.adb.oraclecloud.com))(security=(ssl_server_dn_match=yes)))'''
     conn = None
@@ -238,6 +278,8 @@ def dbOracle_connection():
         print(error)
     return conn
 
+# Esta función ingresa a la base AUTONOMOUS y revisa que archivos ya han sido procesados
+# Regresa una lista con los nombres de cada uno de los archivos
 def getFilesSQL():
     conn = dbOracle_connection()
     cursor = conn.cursor()
@@ -247,7 +289,8 @@ def getFilesSQL():
     data = [t[0] for t in data]
     return data
 
-
+# Esta función ingresa a la base MONGO y revisa que archivos ya han sido procesados
+# Regresa una lista con los nombres de cada uno de los archivos
 def getFilesMongo():
     conn = dbMongo_connection()
     db = conn["Wikipedia"]
@@ -257,7 +300,10 @@ def getFilesMongo():
         namelist.append(doc["Filename"])
     return namelist
 
-# Ingresar los datos de un archivo en la colección mongo
+# Función para Ingresar los datos de un archivo en la colección mongo
+# En Mongo la colección de archivos consiste solamente en documentos con los nombres de cada uno
+# Se recibe un diccionario que contiene el nombre del archivo
+# Se ingresa este nombre a la colección
 def insertarFileMongo(page_data):
     conn = dbMongo_connection()
     db = conn["Wikipedia"]
@@ -266,6 +312,8 @@ def insertarFileMongo(page_data):
     conn.close()
 
 # Insertar los datos de una página a la colección mongo
+# Aqui se inserta el diccionario con los datos procesados de un page
+# Este diccionaro tendrá la estructura del diccionario generado por la funcion procees_page()
 def insertarPageMongo(datos):
 
     client = dbMongo_connection()
@@ -278,7 +326,11 @@ def insertarPageMongo(datos):
     # Close connection
     client.close()
 
-# Para ingresar los datos de un archivo a la base SQL
+# Función para ingresar los datos de un archivo a la base SQL
+# Recibe los datos de un archivo, nombre, dbname, sitename, language
+# Crea una instancia en la tabla file con el nombre dado
+# Crea una instancia en la tabla site con el resto de datos, pone el id del file como fk
+# Regresa el id del site para poder ligarlo con páginas
 def insertFileSQL(filedata):
     conn = dbOracle_connection()
     cursor = conn.cursor()
@@ -298,17 +350,19 @@ def insertFileSQL(filedata):
     return site_id
 
 # Para insertar los datos de un page a las tablas de la base autonomous
+# Se recibe el diccionario de datos, se asigna en variables y se llama al procedimiento INSERT_PAGE_ALL, INSERT_LINK e INSERT_Restriction
+# Este se encarga de ingresar cada dato en sus respectivas tablas
 def insertarPageSQL(page_data, siteId):
 
     pageid = page_data["PageId"]
     pagetitle = page_data["Title"]
     namespace = page_data["Namespace"]
     namespace = str(namespace)
-    # assume links is a list
+    # Links es una lista
     links = page_data['Links']
     wikilink = page_data['WikipediaLink']
     generated = page_data['WikipediaGenerated']
-    # assume restrictions is a list
+    # Restrictions es una lista
     restrictions = page_data['Restrictions']
     # Revision User
     user_id = page_data['LastRevisionData']['User']['UserID']
@@ -324,13 +378,6 @@ def insertarPageSQL(page_data, siteId):
     conn = dbOracle_connection()
     cursor = conn.cursor()
 
-    # DATE
-    typeObj = conn.gettype("STRING_VARRAY")
-    linksVA = typeObj.newobject()
-    restrictionsVA = typeObj.newobject()
-
-    linksVA.extend(links)
-    restrictionsVA.extend(restrictions)
     try:
         # Call procedure
         cursor.callproc('INSERT_PAGE_ALL', [
@@ -346,19 +393,37 @@ def insertarPageSQL(page_data, siteId):
             redirect,
             page_bytes,
             revision_date,
-            clean_text,
-            linksVA,
-            restrictionsVA
+            clean_text
         ])
         conn.commit()
-        cursor.close()
-        conn.close()
 
-    except Exception as e:
-        print("Error:", e)
+        # Para guardar todos los datos de los links de las páginas
+        for link in links:
+            cursor.callproc('INSERT_LINK', [link,pageid])
+            conn.commit()
 
-#-------------------------------------------------------------------------------------------------------------------
-# Función para ver si algún archivo del bucket no se ha insertado en alguna de las bases
+        for restriction in restrictions:
+            cursor.callproc('INSERT_RESTRICTION', [restriction,pageid])
+            conn.commit()
+
+    except:
+        print("ERROR INGRESANDO PÁGINA")
+        print(sys.exc_info()[1])
+        print("Wikiuser = " + user_name)
+    cursor.close()
+    conn.close()
+
+#-----------------------------------------------------------------------------------------------------------------------
+# FUNCIONES DATALOADER
+#-----------------------------------------------------------------------------------------------------------------------
+# Función comparar archivos en el bucket con archivos en las bases
+# Avisa si solo una o ambas bases tienen un archivo, también si ninguna
+# Recibe la lista de archivos para las bases y para el bucket
+
+# Si SQL no lo tiene regresa el nombre del archivo y 'SQL'
+# Si MONGO no lo tiene regresa el nombre del archivo y 'MONGO'
+# Si AMBOS no lo tienen regresa el nombre del archivo y 'AMBOS'
+# Sino retorna none
 def VerificarArchivosProcesados(filesMongo, filesSQL, filesBucket):
 
     for file in filesBucket:
@@ -375,40 +440,46 @@ def VerificarArchivosProcesados(filesMongo, filesSQL, filesBucket):
         else:
             return None
 
-# This function checks every 30 seconds if there is a new file in object storage,
-# if that is the case it processes the XML data and stores it into MongoDB and Autonomous DB
-# This function doesn't stop, it continuously runs in the background
+# Función dataloader, la que se va a ejecutar cada cierto tiempo
 def dataLoader():
-    #while True:
-    # Connect to the bucket
-    object_storage = connect_Bucket()
 
-    # Get the list of files in the bucket
-    objetos_bucket = get_files_in_bucket(object_storage, "ic4302")
-    print("Se obtuvieron los files del bucket")
+    # Se va a repetir infinito
+    while True:
 
-    # Verificar si algún archivo no ha sido procesado:
-    resultado = VerificarArchivosProcesados(getFilesMongo(), getFilesSQL(), get_bucket_objNames(objetos_bucket))
+        # Se conecta al bucket
+        object_storage = connect_Bucket()
+        print("Conectado con object storage")
 
-    if resultado == None:
-        pass
+        # Se obtiene la lista de archivos del bucket
+        objetos_bucket = get_files_in_bucket(object_storage, "ic4302")
+        print("Se obtuvieron los files del bucket")
 
-    else:
-        nombre_archivo = resultado[0]
-        base = resultado[1]
-        print("Se detecto un archivo nuevo para " + base + ". Se va a procesar:")
+        print("Revisando si hay archivos nuevos...")
+        # Verificar si algún archivo no ha sido procesado:
+        resultado = VerificarArchivosProcesados(getFilesMongo(), getFilesSQL(), get_bucket_objNames(objetos_bucket))
 
-        file = downloadFile(object_storage, "ic4302", nombre_archivo)
+        if resultado == None:
+            print('No se detectaron archivos nuevos')
 
-        print("El archivo a procesar es ---> " + nombre_archivo)
-        # Process the new file
-        process_file(file, base, nombre_archivo)
+        # Si se detecta un archivo nuevo
+        else:
+            nombre_archivo = resultado[0]
+            base = resultado[1]
+            print("Se detecto un archivo nuevo para " + base + ".")
 
-        os.remove(file)
+            # Se descarga ese archivo
+            file = downloadFile(object_storage, "ic4302", nombre_archivo)
 
-    # Wait for 30 seconds before checking for new files again
-    time.sleep(30)
+            print("El archivo a procesar es ---> " + nombre_archivo)
 
+            # Se procesa e ingresa a las bases
+            process_file(file, base, nombre_archivo)
 
-#dataLoader()
-insertarPageSQL({'Title': 'AfghanistanHistory', 'PageId': 13, 'Namespace': 0, 'LastRevisionData': {'User': {'UserID': 9784415, 'username': 'Tom.Reding'}, 'Text': {'wikiText': '#REDIRECT [[History of Afghanistan]]\n\n{{Redirect category shell|1=\n{{R from CamelCase}}\n}}', 'NormalText': 'REDIRECT History of Afghanistan'}, 'PageBytes': 90, 'Redirect': 'History of Afghanistan', 'RevisionDate': '2017-06-05T04:18:18Z'}, 'Restrictions': [], 'Links': ['https://en.wikipedia.org/wiki/History of Afghanistan'], 'WikipediaLink': 'https://en.wikipedia.org/wiki/AfghanistanHistory', 'WikipediaGenerated': 'http://en.wikipedia.org/?curid=13', 'FileData': {'dbName': 'enwiki', 'siteName': 'Wikipedia', 'Language': 'English'}},0)
+            os.remove(file)
+
+        # Se espera 30 segundos antes de revisar de nuevo si hay un archivo a procesar
+        time.sleep(30)
+
+if __name__ == '__main__':
+    dataLoader()
+
