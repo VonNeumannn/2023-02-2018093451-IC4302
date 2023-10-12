@@ -227,7 +227,6 @@ def search():
         timeStamp = date_time.strftime("%Y-%m-%dT%H:%M:%S")
         try:
         #Request
-            print(stringBusqueda)
             sql = f"""
             SELECT
                 LR."RevisionCleanText",
@@ -239,14 +238,14 @@ def search():
                 INNER JOIN "ADMIN"."Site" S
                 ON P."Siteid" = S."Siteid"
             WHERE
-                CONTAINS(LR."RevisionCleanText", '{stringBusqueda}', 1) > 0
-                OR CONTAINS(LR."Redirect", '{stringBusqueda}', 2) > 0
-                OR CONTAINS(P."Namespace", '{stringBusqueda}', 3) > 0
-                OR CONTAINS(P."WikipediaLink", '{stringBusqueda}', 4) > 0
-                OR CONTAINS(P."Title", '{stringBusqueda}', 5) > 0
-                OR CONTAINS(P."WikipediaGenerated", '{stringBusqueda}', 6) > 0
-                OR CONTAINS(S."siteName", '{stringBusqueda}', 7) > 0
-                OR CONTAINS(S."Language", '{stringBusqueda}', 8) > 0
+                CONTAINS(LR."RevisionCleanText", '%{stringBusqueda}%', 1) > 0
+                OR CONTAINS(LR."Redirect", '%{stringBusqueda}%', 2) > 0
+                OR CONTAINS(P."Namespace", '%{stringBusqueda}%', 3) > 0
+                OR CONTAINS(P."WikipediaLink", '%{stringBusqueda}%', 4) > 0
+                OR CONTAINS(P."Title", '%{stringBusqueda}%', 5) > 0
+                OR CONTAINS(P."WikipediaGenerated", '%{stringBusqueda}%', 6) > 0
+                OR CONTAINS(S."siteName", '%{stringBusqueda}%', 7) > 0
+                OR CONTAINS(S."Language", '%{stringBusqueda}%', 8) > 0
                 """
             cursor.execute(sql)
             rows = cursor.fetchall()
@@ -289,15 +288,17 @@ def search():
             #Busqueda general
 
             query = [{"$search":{
+                "index":"full_text",
                 "text":{
-                    "path":["Title","LastRevisionData.Text.NormalText",
+                    "path":["Title",
+                            "LastRevisionData.Text.NormalText",
                             "LastRevisionData.User.username",
                             "LastRevisionData.Redirect",
                             "Restrictions",
                             "Links",
                             "FileData.dbName",
-                            "siteName",
-                            "Language"
+                            "FileData.siteName",
+                            "FileData.Language"
                             ],
                     "query": stringBusqueda
                 },
@@ -313,102 +314,100 @@ def search():
               "$project": {
                 "_id": 0,
                 "Title": 1,
-                "WikipediaLink":1,
                 "score": { "$meta": "searchScore" },
                 "highlights": { "$meta": "searchHighlights" }
                 }
             }
             ]
-            queryFacets = [
-                {
-                    "$searchMeta": {
-                        "index":"full_text",
-                        "facet": {
-                            "operator":{
-                                "text":{
-                                    "query":stringBusqueda,
-                                    "path":["Title","LastRevisionData.Text.NormalText",
-                                        "LastRevisionData.User.username",
-                                        "LastRevisionData.Redirect",
-                                        "Restrictions",
-                                        "Links",
-                                        "FileData.dbName",
-                                        "siteName",
-                                        "Language"
-                                    ]
-                                }
-                            },
-                            "facets": {
-                                "PageBytes": {
-                                    "type":"number",
-                                    "path":"LastRevisionData.PageBytes",
-                                    "boundaries": [0, 50, 100, 1000, 10000, 50000],
-                                    "default":"otros"
-                                    },
-                                "Redirect": {
-                                    "type": "string",
-                                    "path": "LastRevisionData.Redirect",
-                                    "numBuckets" : 4
-                                },
-                                "RevisionDate": {
-                                    "type": "date",
-                                    "path": "LastRevisionData.RevisionDate",
-                                    "boundaries": [datetime.strptime("2000-01-01T00:00:00.000Z", "%Y-%m-%dT%H:%M:%S.%fZ"),
-                                                    datetime.strptime("2005-01-01T00:00:00.000Z", "%Y-%m-%dT%H:%M:%S.%fZ"),
-                                                    datetime.strptime("2015-01-01T00:00:00.000Z", "%Y-%m-%dT%H:%M:%S.%fZ"),
-                                                    datetime.strptime("2023-01-10T00:00:00.000Z", "%Y-%m-%dT%H:%M:%S.%fZ")],
-                                    "default":"otros"
-                                },
-                                "username": {
-                                    "type": "string",
-                                    "path": "LastRevisionData.User.username",
-                                    "numBuckets" : 4
-                                },
-                                "Links": {
-                                    "type": "string",
-                                    "path": "Links",
-                                    "numBuckets" : 4
-                                },
-                                "Namespace": {
-                                    "type": "string",
-                                    "path": "Namespace",
-                                    "numBuckets" : 4
-                                },
-                                "NumberLinks": {
-                                    "type": "number",
-                                    "path": "NumberLinks",
-                                    "boundaries": [0, 10, 50, 100],
-                                },
-                                "Restrictions": {
-                                    "type": "string",
-                                    "path": "Restrictions",
-                                    "numBuckets" : 4
-                                },
-                                "SiteDBName": {
-                                    "type": "string",
-                                    "path": "FileData.dbName",
-                                    "numBuckets" : 4
-                                },
-                                "SiteLanguage": {
-                                    "type": "string",
-                                    "path": "FileData.SiteLanguage",
-                                    "numBuckets" : 4
-                                },
-                                "SiteName": {
-                                    "type": "string",
-                                    "path": "FileData.siteName",
-                                    "numBuckets" : 4
-                                },
-                                "WikipediaLink": {
-                                    "type": "string",
-                                    "path": "WikipediaLink",
-                                    "numBuckets" : 4
+            queryFacets = ([
+    {
+        "$searchMeta": {
+            "index": "full_text",
+            "facet": {
+                "operator": {
+                    "compound": {
+                        "should": [
+                            {
+                            "text": {
+                                "query": [
+                                    stringBusqueda
+                                ],
+                                "path": 
+                                    ["Title",
+                                    "LastRevisionData.Text.NormalText",
+                                    "LastRevisionData.User.username",
+                                    "LastRevisionData.Redirect",
+                                    "Restrictions",
+                                    "Links",
+                                    "FileData.dbName",
+                                    "FileData.siteName",
+                                    "FileData.Language"
+                                ]
                                 }
                             }
-                        }
+                        ]
+                    }
+                },
+                "facets": {
+                    "LastRevisionData.PageBytes": {
+                        "type": "number",
+                        "path": "LastRevisionData.PageBytes",
+                        "boundaries": [0, 100, 1000, 10000,1000000, 10000000],
+                        "default": "otros"
+                    },
+                    "LastRevisionData.hasRedirect": {
+                        "type": "string",
+                        "path": "LastRevisionData.hasRedirect"
+                    },
+                    "LastRevisionData.RevisionDate": {
+                        "type": "date",
+                        "path": "LastRevisionData.RevisionDate",
+                        "boundaries": [datetime.strptime("2000-01-01T00:00:00.000Z", "%Y-%m-%dT%H:%M:%S.%fZ"),
+                        datetime.strptime("2005-01-01T00:00:00.000Z", "%Y-%m-%dT%H:%M:%S.%fZ"),
+                        datetime.strptime("2015-01-01T00:00:00.000Z", "%Y-%m-%dT%H:%M:%S.%fZ"),
+                        datetime.strptime("2024-01-01T00:00:00.000Z", "%Y-%m-%dT%H:%M:%S.%fZ")],
+                        "default": "otros"
+                    },
+                    "LastRevisionData.User.username": {
+                        "type": "string",
+                        "path": "LastRevisionData.User.username"
+                    },
+                    "Namespace": {
+                        "type": "string",
+                        "path": "Namespace",
+                        "numBuckets": 4
+                    },
+                    "LinkNumber": {
+                        "type": "number",
+                        "path": "LinkNumber",
+                        "boundaries": [0, 10, 50, 100, 1000],
+
+                    },
+                    "Restrictions": {
+                        "type": "string",
+                        "path": "Restrictions",
+                        "numBuckets": 4
+                    },
+                    "FileData.dbName": {
+                        "type": "string",
+                        "path": "FileData.dbName"
+                    },
+                    "FileData.Language": {
+                        "type": "string",
+                        "path": "FileData.Language"
+                    },
+                    "SiteName": {
+                        "type": "string",
+                        "path": "FileData.siteName"
+                    },
+                    "WikipediaLink": {
+                        "type": "string",
+                        "path": "WikipediaLink"
                     }
                 }
-            ]
+            }
+        },
+    }])
             
             if len(facetsParams) == 0:
                 resultsGeneral = list(collection.aggregate(query))
@@ -430,34 +429,46 @@ def search():
                     dbLogs(title,timeStamp)
                     return "Not found", 404
             else:
-                query2 = [{"$search":{
-                "text":{
-                    "path":["Title","LastRevisionData.Text.NormalText",
-                            "LastRevisionData.User.username",
-                            "LastRevisionData.Redirect",
-                            "Restrictions",
-                            "Links"
-                            ],
-                    "query": stringBusqueda
-                },
-                "highlight":{
-                    "path":"LastRevisionData.Text.NormalText"
-                }
-                }
-                },
-                {
-                    "$facet": {
-                        "docs":[
-                            {"limit":10}
-                        ],
-                        "meta":[
-                           {"$replaceWith":"$$SEARCH_META"},
-                           {"$limit":1}
-                        ]
+
+                query2 = [{
+                        "$search": {
+                        "index":"full_text",
+                        "text":{
+                            "path":["Title",
+                                    "LastRevisionData.Text.NormalText",
+                                    "LastRevisionData.User.username",
+                                    "LastRevisionData.Redirect",
+                                    "Restrictions",
+                                    "Links",
+                                    "FileData.dbName",
+                                    "FileData.siteName",
+                                    "FileData.Language"
+                                    ],
+                            "query": "this"
+                        },
+                        "highlight":{
+                            "path":"LastRevisionData.Text.NormalText"
+                        },
+                        "count":{
+                            "type": "total"
+                        }
+                        },
+                        
+                    },
+                    {
+                    "$match": {
+                        "LastRevisionData.hasRedirect": "True"
                     }
-                },
-                
-                ]
+                    },
+                    {
+                    "$project": {
+                        "_id": 0,
+                        "Title": 1,
+                        "score": { "$meta": "searchScore" },
+                        "highlights": { "$meta": "searchHighlights" }
+                        }
+                        }
+                    ]
                 resultWithFacets = list(collection.aggregate(query2))
                 return resultWithFacets, 200
         except Exception as e:
@@ -471,6 +482,7 @@ def showDocument():
     #Obtiene los parametros
     titleDoc = request.args.get('title')
     tipoRecurso = request.args.get('tipoRecurso')
+    rating = int(request.args.get('like'))
     #logs
     date_time = datetime.now()
     timeStamp = date_time.strftime("%Y-%m-%dT%H:%M:%S")
@@ -484,11 +496,16 @@ def showDocument():
         try:
             sql = f"""SELECT LR."RevisionWikiText",
                             P."WikipediaLink"
+                            P."Rating"
                         FROM ADMIN."Page" P
                         INNER JOIN ADMIN."LastRevision" LR
                         ON LR."PageId" = P."Pageid"
                         WHERE P."Title" = '{titleDoc}'
                         """
+            updateRating = f"""UPDATE "ADMIN"."Page"
+                                SET "Rating" = NVL("Rating", 0) + {rating}
+                                WHERE "Page"."Title" = '{titleDoc}'
+                                """
             cursor.execute(sql)
             rows = cursor.fetchall()
             document = []
@@ -496,10 +513,15 @@ def showDocument():
                 clobText = r[0].read()
                 result_dict = {
                 'cleanText': clobText,
-                'wikiLink': r[1]
+                'wikiLink': r[1],
+                'rating': r[2]
                 }
                 document.append(result_dict)
-
+            # Si el rating es distinto de 0, se actualiza el rating
+            if rating != 0:
+                cursor.execute(updateRating)
+                conn.commit()
+            # Si el documento existe, devuelvo un json con el documento
             if document is not None:
                 title = "Search exitoso"
                 dbLogs(title,timeStamp)
@@ -536,8 +558,16 @@ def showDocument():
             #results = list(collection.find(queryOne))
             wikiText = results.get("LastRevisionData", {}).get("Text", {}).get("wikiText")
             wikiLink = results.get("WikipediaLink")
+            ratings = results.get("Rating")
+
             jsonWiki = {"wikiText":wikiText,
-                        "wikiLink":wikiLink}
+                        "wikiLink":wikiLink,
+                        "rating":ratings}
+            # Si el rating es distinto de 0, se actualiza el rating
+            if rating != 0:
+                collection.updateOne({ "Title": "Anarchism" }, { "$inc": { "Rating": + rating } })
+                conn.commit()
+            # Si el documento existe, devuelvo un json con el documento    
             if wikiText is not None:
                 title = "Muestra el documento"
                 dbLogs(title,timeStamp)
