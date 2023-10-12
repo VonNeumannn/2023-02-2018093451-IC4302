@@ -1,7 +1,0 @@
-flask
-oracledb
-pymongo
-borneo
-certifi
-firebase-admin
-google-cloud-firestore
