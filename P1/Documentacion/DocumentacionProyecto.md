@@ -17,6 +17,61 @@
 - Gerardo Nereo Campos Araya
 
 ## Segundo Semestre 2023
+
+## Índice
+
+- [Infraestructura Propuesta para las Bases Utilizadas](#infraestructura-propuesta-para-las-bases-utilizadas)
+  - [Autonomous Database](#autonomous-database)
+    - [Tablas y datos importantes](#tablas-y-datos-importantes)
+    - [Aclaración Importante del modelo](#aclaración-importante-del-modelo)
+    - [Índices de Búsqueda](#indices-de-búsqueda)
+      - [Autonomous DB](#autonomous-db)
+      - [Search Index Mongo Atlas](#search-index-mongo-atlas)
+    - [Stored Procedures Incluidos](#stored-procedures-incluidos)
+      - [INSERT_PAGE_ALL](#insert_page_all)
+      - [INSERT_LINK](#insert_link)
+      - [INSERT_RESTRICTION](#insert_restriction)
+    - [Dentro del Loader estas funciones se implementan en el siguiente código](#dentro-del-loader-estas-funciones-se-implementan-en-el-siguiente-código)
+      - [INSERT_FILE](#insert_file)
+      - [GET_FILENAMES](#get_filenames)
+      - [INSERT_SITE](#insert_site)
+  - [MongoDb Mapping](#mongodb-mapping)
+- [Componentes del Proyecto](#componentes-del-proyecto)
+  - [Object Storage](#object-storage)
+    - [No hace falta descomprimir los datos primero para subirlos](#no-hace-falta-descomprimir-los-datos-primero-para-subirlos)
+    - [Solo ocupamos un archivo para todos los datos](#solo-ocupamos-un-archivo-para-todos-los-datos)
+  - [DataLoader](#dataloader)
+    - [Puntos Extra](#puntos-extra)
+    - [Duración del Código](#duración-del-código)
+  - [Pruebas realizadas (UnitTests)](#pruebas-realizadas-unittests)
+    - [Para los Unit Tests del Loader se realizaron](#para-los-unit-tests-del-loader-se-realizaron)
+      - [test_connect_bucket()](#test_connect_bucket)
+      - [test_getFiles()](#test_getfiles)
+      - [test_get_bucket_file()](#test_get_bucket_file)
+      - [Pruebas para Mongo](#pruebas-para-mongo)
+      - [test_MongodbConn()](#test_mongodbconn)
+      - [test_MongoGet()](#test_mongoget)
+      - [Pruebas para Autonomous SQL](#pruebas-para-autonomous-sql)
+      - [test_oracle_connection()](#test_oracle_connection)
+      - [test_oracleGet()](#test_oracleget)
+      - [test_parse_text()](#test_parse_text)
+      - [test_get_links()](#test_get_links)
+  - [Aclaración](#aclaración)
+- [API](#api)
+- [Manual de Instalación / Ejecución](#manual-de-instalación--ejecución)
+  - [Ejecución](#ejecución)
+  - [UI](#ui)
+    - [Primer pantalla](#primer-pantalla)
+    - [Pantalla de registro](#pantalla-de-registro)
+    - [Pantalla Buscar](#pantalla-buscar)
+      - [Página buscar con resultados](#página-buscar-con-resultados)
+    - [Pantalla Documento completo](#pantalla-documento-completo)
+    - [Final](#final)
+- [Recomendaciones](#recomendaciones)
+- [Conclusiones](#conclusiones)
+- [Información Importante y Consideraciones](#información-importante-y-consideraciones)
+- [Referencias](#referencias)
+
 ---
 La presente es la documentación del proyecto 1 , que consistió en desarrollar un sistema para desplegar y procesar páginas de wikipedia a través de los Wikidumps XML. En este documento se detalla la funcionalidad de los componentes implementados, las pruebas unitarias realizadas, el manual de usuario para operar el sistema, y las conclusiones y recomendaciones para mejoras futuras. El objetivo es proporcionar una visión integral de la solución desarrollada y sus capacidades
 
@@ -29,6 +84,7 @@ La presente es la documentación del proyecto 1 , que consistió en desarrollar 
 Para mantener una buena consistencia de los datos, para nuestra base SQL en oracle, el modelo propuesto es:
 
 ![Imagen del modelo](imgs/DiagramaER_SQL.png)
+
 #### Tablas y datos importantes
 
 - La **tabla File** almacena metadatos de los archivos de los Wiki Dumps, cuyos datos ya han sido procesados por el loader. Cada archivo tiene un ID único y un nombre. Esta tabla es relevante ya que a través de la información contenida aquí se puede revisar si ya los datos de una página fueron ingresados a la base anteriormente y así evitar que el Loader los ingrese por segunda vez.
@@ -56,6 +112,7 @@ Para seguir los principios de normalización se tomó la decisión de  no almace
 - PageHasRedirect se calcula revisando si el atributo Redirect es distinto de NULL en la tabla LastRevision.
 
 #### Indices de Búsqueda
+
 ##### Autonomous DB
 
 ![Imagen de todos los indices de autonomous DB](imgs/indexes.png)
@@ -63,6 +120,7 @@ Para seguir los principios de normalización se tomó la decisión de  no almace
 Lo que hacemos con esto es crear indices en cada campo donde queremos buscar, le asignamos un nombre, luego indicamos la columna que queremos indexar, al final las instrucciones INDEXTYPE IS CTXSYS.CONTEXT son debido a que el tipo CLOB en oracle no es indexable normalmente, pero con esto ya se pueden crear con normalidad.
 
 ##### Search Index Mongo Atlas
+
 ![Imagen de todos los indices de mongo Atlas](imgs/indexMongo.png)
 
 Para crear un indice de busqueda lo que debemos hacer es mapear cada uno de los campos que queremos usar para buscar. En caso de definir facets se hace con los tipos llamados: StringFacet, NumberFacet o DateFacet, por facilidad se utilizó la herramienta para crear indices de mongo, pero también se pueden definir mediante json.
@@ -207,21 +265,18 @@ Este método prueba estableciendo una conexión con el bucket, obteniendo la lis
 1. Si hay datos en el bucket se prueba descargando el promer archivo de esos datos y que si se descargue correctamente
 2. Si no hay datos en el bucket no se prueba descargar y simplemente se pasa el test
 
-
 Para pasar el test se debe revisar que se regrese el nombre del archivo descargado o que se ignore en caso de ser vacío.
-
 
 Probando estos 3 métodos sobre las funciones del Loader:
 
 ![Alt text](imgs/unittestresult1.png)
 
---- 
+---
 Luego se probaron métodos para probar si los métodos de conexión e inserción en las bases de datos funcionaban correctamente:
 
 ##### Pruebas para Mongo
 
 ![Alt text](imgs/testConnMongo.png)
-
 
 Para Mongo se hacen dos pruebas:
 
@@ -246,8 +301,8 @@ Al igual que con mongo, en Autonomous se probaron los métodos del loader para c
 
 ![Alt text](imgs/PruebaconnSQL.png)
 
-
 ##### test_oracle_connection()
+
 Esta prueba verifica si se puede establecer conexión con Oracle Cloud Infrastructre y entrar a la base Autonomous.
 
 El método es exitoso si la conexión es distinta de None. Despúes de verificar esto el test se considera completado.
@@ -260,28 +315,25 @@ Una vez hecho esto se prueba el método para ingresar un archivo a la base de da
 
 Si esto es exitoso se considera la prueba como terminada.
 
-
 Los resultados al ejecutar estas pruebas son:
 
 ![Alt text](imgs/testsconn.png)
-
 
 ---
 
 Después se prueba la función para comparar las listas de archivos en cada base y verificar si coinciden con los archivos que están almacenados en el bucket. Si en el bucket hay un archivo que no sale en alguna de las bases se procede a retornar el nombre del archivo y la base donde se desea ingresar.
 
-
 ![Alt text](imgs/VerificarArchivosFaltantes.png)
 
-Para este método, se hacen distintas pruebas una donde SQL no tenga el archivo, una donde Mongo no tenga el archivo, una donde ambos no lo tengan y una donde ambos si lo tengan. 
+Para este método, se hacen distintas pruebas una donde SQL no tenga el archivo, una donde Mongo no tenga el archivo, una donde ambos no lo tengan y una donde ambos si lo tengan.
 
-* Cuando SQL no tiene el archivo se espera recibir el nombre y el string 'SQL'
+- Cuando SQL no tiene el archivo se espera recibir el nombre y el string 'SQL'
 
-* Cuando Mongo no tiene el archivo se espera recibir el nombre y el string 'MONGO'
+- Cuando Mongo no tiene el archivo se espera recibir el nombre y el string 'MONGO'
 
-* Cuando ninguna lo tiene se regresa el nombre y se espera el string 'AMBOS'
+- Cuando ninguna lo tiene se regresa el nombre y se espera el string 'AMBOS'
 
-* Cuando ambos tienen el archivo se espera obtener de output None
+- Cuando ambos tienen el archivo se espera obtener de output None
 
 Una vez que se comprueban todos los casos exitosamente se considera el unittest como completado
 
@@ -294,7 +346,6 @@ Finalmente, se prueban las funciones para parsear wikitext y obtener links
 
 ![Alt text](imgs/TestParser.png)
 
-
 ##### test_parse_text()
 
 Esta función contiene un wikitext de ejemplo y texto limpio, este texto limpio representa el output esperado después de parsear el wikitext para quitarle todos los elementos adicionales.
@@ -303,10 +354,9 @@ El test funciona si al parsear el wikitext si se obtiene el texto esperado. Una 
 
 ##### test_get_links()
 
-Similar a la pasada, esta función tiene un wikitext ejemplo que contiene lins, también se tiene una lista con los links que se espera que el método get_lins regrese en base a ese texto. 
+Similar a la pasada, esta función tiene un wikitext ejemplo que contiene lins, también se tiene una lista con los links que se espera que el método get_lins regrese en base a ese texto.
 
 Si los links obtenidos al ejecutar el método son iguales a los links esperados, se considera completado el Unittest
-
 
 Corriendo estas pruebas se obtiene:
 
@@ -316,7 +366,7 @@ Corriendo estas pruebas se obtiene:
 
 #### Aclaración
 
-Hubo algunos métodos en el código para el que no se hicieron unit tests ya que son una combinación de los métodos que si se probaron a través de las pruebas. Un ejemplo de esto es la función dataloader(), la cuál consiste de una combinacion de las funciones de conectar, obtener archivos y parsear. 
+Hubo algunos métodos en el código para el que no se hicieron unit tests ya que son una combinación de los métodos que si se probaron a través de las pruebas. Un ejemplo de esto es la función dataloader(), la cuál consiste de una combinacion de las funciones de conectar, obtener archivos y parsear.
 
 El resultado al correr todas las pruebas es:
 
@@ -324,8 +374,8 @@ El resultado al correr todas las pruebas es:
 
 Si bien se tiran advertencias, estas no afectan el desempeño o resultados de las pruebas y se pueden ignorar.
 
-
 ---
+
 ### API
 
 [//]: # (Breve explicación, aclaraciones, explicar cada una de las direcciones  Documentación de los endpoints de Mongo Atlas utilizados, se debe apoyar con ejemplos de su código Pruebas realizadas UnitTests)
@@ -474,6 +524,12 @@ Para facilitar esta integración, recomendamos utilizar la biblioteca Axios de J
 - Algunas bases de datos hacen que las tareas de crear, obtener, modificar datos, y obtener conexiones a las bases de datos sean más sencillas, por ejemplo Mongo Atlas, Firebase facilitan las conexiones ya que tienen código generado para varios lenguajes. Además sus estructuras son mucho más intuitivas al ser NoSQL. Caso contrario con Autonomous DB.
 
 - Las máquinas virtuales en la nube son herramientas increíblemente poderosas en comparación con soluciones locales como Docker. Anteriormente, utilizamos Docker y almacenamos todos los datos localmente, lo cual resultaba muy pesado y consumía grandes cantidades de recursos en nuestros dispositivos. Ahora con VMs se resolvieron estos problemas al permitirnos crear entornos aislados y escalables bajo demanda
+
+- MongoDB Atlas es una base de datos sumamente potente implementa funciones realmente útiles como los highlights, facets, entre otras cosas que nos gustaria investigar en el futuro.
+
+- Las bases de datos NoSQL como lo es Mongo Atlas, resultan sumamente intuitivas para el desarrollo, ya que no tenemos toda la complejidad que posee el tratar de entender un modelo y todas las relaciones entre tablas que tienen las bases de datos SQL.
+
+- El manejo de datos mediante JSON resulta muy fácil de usar para mover datos de BD hasta el API y luego a la UI, al ser estandarizado, en todas las tecnologías que se usaron en el proyecto fue muy sencillo de manejar y todas tenian soporte para el archivo.
 
 ## Información Importante y Consideraciones
 
