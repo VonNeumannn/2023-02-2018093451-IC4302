@@ -516,7 +516,7 @@ Una vez los administradores suben este documento el componente loader en el fond
 
 Para conectar con el UI
 
-#Ustedes explican lo del ssh y como conectar de la página
+Una vez el terraform apply se haya ejecutado, nos dará una dirección ip para poder conectarnos por SSH, esta misma dirección la usamos para llamar a la UI mediante la dirección: dirección:8080/. Ya con esto tendremos accesso, a las funcionalidades.
 
 
 ### UI
