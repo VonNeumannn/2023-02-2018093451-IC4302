@@ -249,7 +249,7 @@ def process_file(file_obj, opcionAlmacenamiento, filename):
         elif opcionAlmacenamiento == 'MONGO':
             insertarPageMongo(processed)
 
-        cont+=1
+        #cont+=1
         if cont == 30:
             break
     print("Se procesaron todas las páginas")
