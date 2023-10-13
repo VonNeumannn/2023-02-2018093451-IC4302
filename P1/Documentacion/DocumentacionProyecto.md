@@ -20,57 +20,63 @@
 
 ## Índice
 
-- [Infraestructura Propuesta para las Bases Utilizadas](#infraestructura-propuesta-para-las-bases-utilizadas)
-  - [Autonomous Database](#autonomous-database)
-    - [Tablas y datos importantes](#tablas-y-datos-importantes)
-    - [Aclaración Importante del modelo](#aclaración-importante-del-modelo)
-    - [Índices de Búsqueda](#indices-de-búsqueda)
-      - [Autonomous DB](#autonomous-db)
-      - [Search Index Mongo Atlas](#search-index-mongo-atlas)
-    - [Stored Procedures Incluidos](#stored-procedures-incluidos)
-      - [INSERT_PAGE_ALL](#insert_page_all)
-      - [INSERT_LINK](#insert_link)
-      - [INSERT_RESTRICTION](#insert_restriction)
-    - [Dentro del Loader estas funciones se implementan en el siguiente código](#dentro-del-loader-estas-funciones-se-implementan-en-el-siguiente-código)
-      - [INSERT_FILE](#insert_file)
-      - [GET_FILENAMES](#get_filenames)
-      - [INSERT_SITE](#insert_site)
-  - [MongoDb Mapping](#mongodb-mapping)
-- [Componentes del Proyecto](#componentes-del-proyecto)
-  - [Object Storage](#object-storage)
-    - [No hace falta descomprimir los datos primero para subirlos](#no-hace-falta-descomprimir-los-datos-primero-para-subirlos)
-    - [Solo ocupamos un archivo para todos los datos](#solo-ocupamos-un-archivo-para-todos-los-datos)
-  - [DataLoader](#dataloader)
-    - [Puntos Extra](#puntos-extra)
-    - [Duración del Código](#duración-del-código)
-  - [Pruebas realizadas (UnitTests)](#pruebas-realizadas-unittests)
-    - [Para los Unit Tests del Loader se realizaron](#para-los-unit-tests-del-loader-se-realizaron)
-      - [test_connect_bucket()](#test_connect_bucket)
-      - [test_getFiles()](#test_getfiles)
-      - [test_get_bucket_file()](#test_get_bucket_file)
-      - [Pruebas para Mongo](#pruebas-para-mongo)
-      - [test_MongodbConn()](#test_mongodbconn)
-      - [test_MongoGet()](#test_mongoget)
-      - [Pruebas para Autonomous SQL](#pruebas-para-autonomous-sql)
-      - [test_oracle_connection()](#test_oracle_connection)
-      - [test_oracleGet()](#test_oracleget)
-      - [test_parse_text()](#test_parse_text)
-      - [test_get_links()](#test_get_links)
-  - [Aclaración](#aclaración)
-- [API](#api)
-- [Manual de Instalación / Ejecución](#manual-de-instalación--ejecución)
-  - [Ejecución](#ejecución)
-  - [UI](#ui)
-    - [Primer pantalla](#primer-pantalla)
-    - [Pantalla de registro](#pantalla-de-registro)
-    - [Pantalla Buscar](#pantalla-buscar)
-      - [Página buscar con resultados](#página-buscar-con-resultados)
-    - [Pantalla Documento completo](#pantalla-documento-completo)
-    - [Final](#final)
-- [Recomendaciones](#recomendaciones)
-- [Conclusiones](#conclusiones)
-- [Información Importante y Consideraciones](#información-importante-y-consideraciones)
-- [Referencias](#referencias)
+- [Proyecto I - WikiSearch](#proyecto-i---wikisearch)
+  - [Tecnológico de Costa Rica](#tecnológico-de-costa-rica)
+  - [Escuela de Ingeniería en Computación](#escuela-de-ingeniería-en-computación)
+  - [Bases de Datos II (IC 4302)](#bases-de-datos-ii-ic-4302)
+  - [Integrantes del grupo](#integrantes-del-grupo)
+  - [Profesor](#profesor)
+  - [Segundo Semestre 2023](#segundo-semestre-2023)
+  - [Índice](#índice)
+  - [Infraestructura Propuesta para las Bases Utilizadas](#infraestructura-propuesta-para-las-bases-utilizadas)
+    - [Autonomous Database](#autonomous-database)
+      - [Tablas y datos importantes](#tablas-y-datos-importantes)
+      - [Aclaración Importante del modelo](#aclaración-importante-del-modelo)
+      - [Indices de Búsqueda](#indices-de-búsqueda)
+        - [Autonomous DB](#autonomous-db)
+        - [Search Index Mongo Atlas](#search-index-mongo-atlas)
+      - [Stored Procedures Incluidos](#stored-procedures-incluidos)
+        - [INSERT\_PAGE\_ALL](#insert_page_all)
+        - [INSERT\_LINK](#insert_link)
+        - [INSERT\_RESTRICTION](#insert_restriction)
+      - [Dentro del Loader estas funciones se implementan en el siguiente código](#dentro-del-loader-estas-funciones-se-implementan-en-el-siguiente-código)
+        - [INSERT\_FILE](#insert_file)
+        - [GET\_FILENAMES](#get_filenames)
+        - [INSERT\_SITE](#insert_site)
+    - [MongoDb Mapping](#mongodb-mapping)
+  - [Componentes del Proyecto](#componentes-del-proyecto)
+    - [Object Storage](#object-storage)
+    - [DataLoader](#dataloader)
+        - [Puntos Extra](#puntos-extra)
+        - [Duración del Código](#duración-del-código)
+    - [Pruebas realizadas (UnitTests)](#pruebas-realizadas-unittests)
+      - [Para los Unit Tests del Loader se realizaron](#para-los-unit-tests-del-loader-se-realizaron)
+        - [test\_connect\_bucket()](#test_connect_bucket)
+        - [test\_getFiles()](#test_getfiles)
+        - [test\_get\_bucket\_file()](#test_get_bucket_file)
+        - [Pruebas para Mongo](#pruebas-para-mongo)
+        - [test\_MongodbConn()](#test_mongodbconn)
+        - [test\_MongoGet()](#test_mongoget)
+        - [Pruebas para Autonomous SQL](#pruebas-para-autonomous-sql)
+        - [test\_oracle\_connection()](#test_oracle_connection)
+        - [test\_oracleGet()](#test_oracleget)
+        - [test\_parse\_text()](#test_parse_text)
+        - [test\_get\_links()](#test_get_links)
+      - [Aclaración](#aclaración)
+    - [API](#api)
+    - [Manual de Instalación / Ejecución](#manual-de-instalación--ejecución)
+      - [Ejecución](#ejecución)
+      - [UI](#ui)
+  - [Primer pantalla](#primer-pantalla)
+  - [Pantalla de registro](#pantalla-de-registro)
+  - [Pantalla Buscar](#pantalla-buscar)
+    - [Página buscar con resultados](#página-buscar-con-resultados)
+  - [Pantalla Documento completo](#pantalla-documento-completo)
+  - [Final](#final)
+  - [Recomendaciones](#recomendaciones)
+  - [Conclusiones](#conclusiones)
+  - [Información Importante y Consideraciones](#información-importante-y-consideraciones)
+  - [Referencias](#referencias)
 
 ---
 La presente es la documentación del proyecto 1 , que consistió en desarrollar un sistema para desplegar y procesar páginas de wikipedia a través de los Wikidumps XML. En este documento se detalla la funcionalidad de los componentes implementados, las pruebas unitarias realizadas, el manual de usuario para operar el sistema, y las conclusiones y recomendaciones para mejoras futuras. El objetivo es proporcionar una visión integral de la solución desarrollada y sus capacidades
@@ -237,7 +243,7 @@ Este código va a estar comentado en el documento que se va a subir, entonces pa
 
 #### Para los Unit Tests del Loader se realizaron 
 
-Primero se probaron las funciones del Loader para conectar con el bucket de OCI, obtener los archivos en el bucket, descargar uno de estos archivos y descomprimirlo
+Primero se probaron las funciones del Loader para conectar con el bucket de OCI, obtener los archivos en el bucket, descargar uno de estos archivos y descomprimirlo. Si bien estos tests demuestran las funcionalidades del bucket **SOLO SIRVEN SI LA BASE ESTA CORRIENDO** y por ende se usaron para probar funcionalidades inicialmente pero actualmente solo están comentados
 
 Estos Unit Tests son los siguientes:
 
@@ -297,7 +303,7 @@ Luego de probar el Get se prueba insertando un dato nuevo a la colección y lueg
 
 ##### Pruebas para Autonomous SQL
 
-Al igual que con mongo, en Autonomous se probaron los métodos del loader para conectar e insertar datos dentro de la base. Estos tests fueron:
+Al igual que con mongo, en Autonomous se probaron los métodos del loader para conectar e insertar datos dentro de la base. Sin embargo, es importante notar que **ESTOS MÉTODOS SOLO SIRVEN SI LA BASE ESTA CORRIENDO**, por lo tanto están comentados dentro del dockerfile para evitar errores porque no existe la base. Estos tests fueron:
 
 ![Alt text](imgs/PruebaconnSQL.png)
 
@@ -366,27 +372,57 @@ Corriendo estas pruebas se obtiene:
 
 #### Aclaración
 
-Hubo algunos métodos en el código para el que no se hicieron unit tests ya que son una combinación de los métodos que si se probaron a través de las pruebas. Un ejemplo de esto es la función dataloader(), la cuál consiste de una combinacion de las funciones de conectar, obtener archivos y parsear.
+Hubo algunos métodos en el código para el que no se hicieron unit tests ya que son una combinación de los métodos que si se probaron a través de las pruebas. Además el resto de funciones que no se pudieron hacer Unittests son aquellas en las que se requiere conexión con la base de datos SQL, es decir, requieren que primero se genere la infrastructura SQL para correrlas, sin embargo, cuando se cree la imagen de docker con estos tests no se espera que esta exista aún.
 
-El resultado al correr todas las pruebas es:
+El resultado al correr todas las pruebas  en un escenario donde la base si este corriendo es:
 
 ![Alt text](image.png)
 
-Si bien se tiran advertencias, estas no afectan el desempeño o resultados de las pruebas y se pueden ignorar.
+Si bien se tiran advertencias, estas no afectan el desempeño o resultados de las pruebas y se pueden ignorar. Todas las pruebas son aprobadas cuando la base de datos esta corriendo.
+
 
 ---
 
-### API
+#### API
 
-[//]: # (Breve explicación, aclaraciones, explicar cada una de las direcciones  Documentación de los endpoints de Mongo Atlas utilizados, se debe apoyar con ejemplos de su código Pruebas realizadas UnitTests)
+La API se completó en un en un 90% la parte no implementada es la de los facets, estos si se obtienen cuando se realiza la búsqueda con mongo.
 
-### Manual de Instalación / Ejecución
+##### Componentes:
+CORS(app): Cross-origin resource sharing, es un mecanismo que permite que se puedan solicitar recursos restringidos. Esto nos ayuda para poder enviar y solicitar datos desde la API y la UI
+Funciones:
+**dbOracle_connection():** Con este método nos conectamos a la base de datos de oracle mediante un user, password y un string que contiene los datos de conexión.
+**dbMongo_connection():** Método para conectar con la base de datos de mongo, mediante el string que nos da mongo.
+**dbLogs(title, timeStamp):** Esta función se encarga de insertar logs en una tabla NoSQL, con un mensaje y la hora de la consulta.
+**firebaseConnection():** Función para conectarse a firebase y retorna la conexión.
+**Enpoints:**
+**/register:** Es un post que pasa los datos necesarios en tipo json para registrarse en firebase y retorna un mensaje indicando que el registro fue exitoso.
+Imagen
+**/login:** Este es un post que recibe un email y contraseña, con esto se busca si existe en firebase en caso de ser así entonces comprueba si la contraseña es correcta y devuelta un mensaje de login exitoso.
+IMAGNE
+**/search:** En este endpoint GET se tienen parámetros en la URL,  stringBusqueda, este es el que contiene el string que queremos buscar. tipoRecurso, contiene en cuál base de datos queremos buscar(1 para autonomous, 2 para mongo), luego de que se extraen los parámetros se comprueba el tipo de BD, si es autonomous, se define una consulta SQL(se adjunta imagen de la consulta), esta consulta hace un SELECT para obtener el título y los datos que ocupamos, gracias a los índices creados podemos usar la instrucción CONTAINS de oracle sql, inmediatamente después se ejecuta la consulta y se guardan los datos para ser retornados en formato JSON, y realizar su respectiva inserción a la tabla de logs. Al final cierra la conexión.
+Imagen
+Cuando la base es Mongo Atlas se obtiene el stringBusqueda, se llama a la función para conectarse a mongo, y se define la colección con la que vamos a trabajar, luego se define la consulta para usar con el método aggregate() de mongo, la consulta contiene las siguientes partes: primero, seleccionamos el índice creado de los campos donde vamos a buscar, luego definimos las rutas donde vamos a buscar así como la palabra que queremos buscar, además de utilizar la funcionalidad que tiene mongo para realizar highlight de los resultados, por último definimos los datos que queremos que muestre la consulta.
+La segunda consulta define los los buckets(como los tags de cada facet) y límites(rangos) que va a tener cada facet, además de esto obtenemos los facets con su bucket, específicamente para la búsqueda. Luego de esto utilizamos la función aggregate() para agregar en un stage en mongo, luego se retorna el los resultados de la búsqueda y los facets correspondientes.
+Imagen
+**/document:** Es un GET obtenemos los parámetros title, tipoRecurso. Si es autonomousDB, definimos una consulta sql para obtener el documento buscando por title, se ejecuta esta consulta la cual devuelve el Texto limpio de, el link a wikipedia y el Rating, luego retorna el documento con formato json. Además de insertar en la tabla logs.
+Imagen
+En caso de mongo atlas, primero encuentra según el title recibido como parámetro, luego obtiene el texto normalizado, seguido del link a wikipedia así como el rating actual de la página. Si encuentra el documento lo retorna como un tipo json, si no muestra un mensaje de error e inserta en la tabla de logs.
+imagen 
+**/rating:** Este endpoint va a realizar un GET que tiene como parametros, title, tipoRecurso, rating. Si es autonomous entonces realiza una consulta sql que actualiza el campo rating de la tabla Page, para sumar o restar uno dependiendo del contenido de rating, luego retorna un mensaje si la tabla se actualizó.
+imagen
+Para mongo atlas, realiza un update en la colección según el título para hacer un incremento o decremento del rating, y lanza un mensaje.
+imagen
+##### Pruebas realizadas (UnitTests)
+Para cada prueba se construye una url con el endpoint necesario además de agregarle los parámetros necesarios. 
+**test_login:** Realiza la comprobación de que se realiza el login correctamente, toma los datos dados al principio. Es una consulta del tipo POST
+**test_register:** Ingresa datos de prueba para comprobar que se realizó el registro correctamente.
+**test_searchOracle:** Busca en la base de datos autonomous, definimos lo que queremos buscar al principio del programa.
+**test_searchMongo:** Busca en mongo atlas, con los datos que definimos.
+**test_documentOracle:** Con esto se prueba que se encuentre el documento con el título seleccionado en la base de datos autonomous.
+**test_documentMongo:** Se muestra el documento con el título seleccionado según el título.
+**test_ratingOracle:** Se prueba que la actualización del rating en autonomous sea correcta.
+**test_ratingMongo:** Se prueba que la actualización del rating en mongo sea correcta.
 
-El siguiente será un manual donde se explica la instalación del programa y el uso de la interfaz de usuario.
-
-#### Ejecución
-
-Aqui va la explicacion
 
 #### UI
 
