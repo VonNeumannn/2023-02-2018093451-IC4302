@@ -20,57 +20,63 @@
 
 ## Índice
 
-- [Infraestructura Propuesta para las Bases Utilizadas](#infraestructura-propuesta-para-las-bases-utilizadas)
-  - [Autonomous Database](#autonomous-database)
-    - [Tablas y datos importantes](#tablas-y-datos-importantes)
-    - [Aclaración Importante del modelo](#aclaración-importante-del-modelo)
-    - [Índices de Búsqueda](#indices-de-búsqueda)
-      - [Autonomous DB](#autonomous-db)
-      - [Search Index Mongo Atlas](#search-index-mongo-atlas)
-    - [Stored Procedures Incluidos](#stored-procedures-incluidos)
-      - [INSERT_PAGE_ALL](#insert_page_all)
-      - [INSERT_LINK](#insert_link)
-      - [INSERT_RESTRICTION](#insert_restriction)
-    - [Dentro del Loader estas funciones se implementan en el siguiente código](#dentro-del-loader-estas-funciones-se-implementan-en-el-siguiente-código)
-      - [INSERT_FILE](#insert_file)
-      - [GET_FILENAMES](#get_filenames)
-      - [INSERT_SITE](#insert_site)
-  - [MongoDb Mapping](#mongodb-mapping)
-- [Componentes del Proyecto](#componentes-del-proyecto)
-  - [Object Storage](#object-storage)
-    - [No hace falta descomprimir los datos primero para subirlos](#no-hace-falta-descomprimir-los-datos-primero-para-subirlos)
-    - [Solo ocupamos un archivo para todos los datos](#solo-ocupamos-un-archivo-para-todos-los-datos)
-  - [DataLoader](#dataloader)
-    - [Puntos Extra](#puntos-extra)
-    - [Duración del Código](#duración-del-código)
-  - [Pruebas realizadas (UnitTests)](#pruebas-realizadas-unittests)
-    - [Para los Unit Tests del Loader se realizaron](#para-los-unit-tests-del-loader-se-realizaron)
-      - [test_connect_bucket()](#test_connect_bucket)
-      - [test_getFiles()](#test_getfiles)
-      - [test_get_bucket_file()](#test_get_bucket_file)
-      - [Pruebas para Mongo](#pruebas-para-mongo)
-      - [test_MongodbConn()](#test_mongodbconn)
-      - [test_MongoGet()](#test_mongoget)
-      - [Pruebas para Autonomous SQL](#pruebas-para-autonomous-sql)
-      - [test_oracle_connection()](#test_oracle_connection)
-      - [test_oracleGet()](#test_oracleget)
-      - [test_parse_text()](#test_parse_text)
-      - [test_get_links()](#test_get_links)
-  - [Aclaración](#aclaración)
-- [API](#api)
-- [Manual de Instalación / Ejecución](#manual-de-instalación--ejecución)
-  - [Ejecución](#ejecución)
-  - [UI](#ui)
-    - [Primer pantalla](#primer-pantalla)
-    - [Pantalla de registro](#pantalla-de-registro)
-    - [Pantalla Buscar](#pantalla-buscar)
-      - [Página buscar con resultados](#página-buscar-con-resultados)
-    - [Pantalla Documento completo](#pantalla-documento-completo)
-    - [Final](#final)
-- [Recomendaciones](#recomendaciones)
-- [Conclusiones](#conclusiones)
-- [Información Importante y Consideraciones](#información-importante-y-consideraciones)
-- [Referencias](#referencias)
+- [Proyecto I - WikiSearch](#proyecto-i---wikisearch)
+  - [Tecnológico de Costa Rica](#tecnológico-de-costa-rica)
+  - [Escuela de Ingeniería en Computación](#escuela-de-ingeniería-en-computación)
+  - [Bases de Datos II (IC 4302)](#bases-de-datos-ii-ic-4302)
+  - [Integrantes del grupo](#integrantes-del-grupo)
+  - [Profesor](#profesor)
+  - [Segundo Semestre 2023](#segundo-semestre-2023)
+  - [Índice](#índice)
+  - [Infraestructura Propuesta para las Bases Utilizadas](#infraestructura-propuesta-para-las-bases-utilizadas)
+    - [Autonomous Database](#autonomous-database)
+      - [Tablas y datos importantes](#tablas-y-datos-importantes)
+      - [Aclaración Importante del modelo](#aclaración-importante-del-modelo)
+      - [Indices de Búsqueda](#indices-de-búsqueda)
+        - [Autonomous DB](#autonomous-db)
+        - [Search Index Mongo Atlas](#search-index-mongo-atlas)
+      - [Stored Procedures Incluidos](#stored-procedures-incluidos)
+        - [INSERT\_PAGE\_ALL](#insert_page_all)
+        - [INSERT\_LINK](#insert_link)
+        - [INSERT\_RESTRICTION](#insert_restriction)
+      - [Dentro del Loader estas funciones se implementan en el siguiente código](#dentro-del-loader-estas-funciones-se-implementan-en-el-siguiente-código)
+        - [INSERT\_FILE](#insert_file)
+        - [GET\_FILENAMES](#get_filenames)
+        - [INSERT\_SITE](#insert_site)
+    - [MongoDb Mapping](#mongodb-mapping)
+  - [Componentes del Proyecto](#componentes-del-proyecto)
+    - [Object Storage](#object-storage)
+    - [DataLoader](#dataloader)
+        - [Puntos Extra](#puntos-extra)
+        - [Duración del Código](#duración-del-código)
+    - [Pruebas realizadas (UnitTests)](#pruebas-realizadas-unittests)
+      - [Para los Unit Tests del Loader se realizaron](#para-los-unit-tests-del-loader-se-realizaron)
+        - [test\_connect\_bucket()](#test_connect_bucket)
+        - [test\_getFiles()](#test_getfiles)
+        - [test\_get\_bucket\_file()](#test_get_bucket_file)
+        - [Pruebas para Mongo](#pruebas-para-mongo)
+        - [test\_MongodbConn()](#test_mongodbconn)
+        - [test\_MongoGet()](#test_mongoget)
+        - [Pruebas para Autonomous SQL](#pruebas-para-autonomous-sql)
+        - [test\_oracle\_connection()](#test_oracle_connection)
+        - [test\_oracleGet()](#test_oracleget)
+        - [test\_parse\_text()](#test_parse_text)
+        - [test\_get\_links()](#test_get_links)
+      - [Aclaración](#aclaración)
+    - [API](#api)
+    - [Manual de Instalación / Ejecución](#manual-de-instalación--ejecución)
+      - [Ejecución](#ejecución)
+      - [UI](#ui)
+  - [Primer pantalla](#primer-pantalla)
+  - [Pantalla de registro](#pantalla-de-registro)
+  - [Pantalla Buscar](#pantalla-buscar)
+    - [Página buscar con resultados](#página-buscar-con-resultados)
+  - [Pantalla Documento completo](#pantalla-documento-completo)
+  - [Final](#final)
+  - [Recomendaciones](#recomendaciones)
+  - [Conclusiones](#conclusiones)
+  - [Información Importante y Consideraciones](#información-importante-y-consideraciones)
+  - [Referencias](#referencias)
 
 ---
 La presente es la documentación del proyecto 1 , que consistió en desarrollar un sistema para desplegar y procesar páginas de wikipedia a través de los Wikidumps XML. En este documento se detalla la funcionalidad de los componentes implementados, las pruebas unitarias realizadas, el manual de usuario para operar el sistema, y las conclusiones y recomendaciones para mejoras futuras. El objetivo es proporcionar una visión integral de la solución desarrollada y sus capacidades
@@ -237,7 +243,7 @@ Este código va a estar comentado en el documento que se va a subir, entonces pa
 
 #### Para los Unit Tests del Loader se realizaron 
 
-Primero se probaron las funciones del Loader para conectar con el bucket de OCI, obtener los archivos en el bucket, descargar uno de estos archivos y descomprimirlo
+Primero se probaron las funciones del Loader para conectar con el bucket de OCI, obtener los archivos en el bucket, descargar uno de estos archivos y descomprimirlo. Si bien estos tests demuestran las funcionalidades del bucket **SOLO SIRVEN SI LA BASE ESTA CORRIENDO** y por ende se usaron para probar funcionalidades inicialmente pero actualmente solo están comentados
 
 Estos Unit Tests son los siguientes:
 
@@ -297,7 +303,7 @@ Luego de probar el Get se prueba insertando un dato nuevo a la colección y lueg
 
 ##### Pruebas para Autonomous SQL
 
-Al igual que con mongo, en Autonomous se probaron los métodos del loader para conectar e insertar datos dentro de la base. Estos tests fueron:
+Al igual que con mongo, en Autonomous se probaron los métodos del loader para conectar e insertar datos dentro de la base. Sin embargo, es importante notar que **ESTOS MÉTODOS SOLO SIRVEN SI LA BASE ESTA CORRIENDO**, por lo tanto están comentados dentro del dockerfile para evitar errores porque no existe la base. Estos tests fueron:
 
 ![Alt text](imgs/PruebaconnSQL.png)
 
@@ -372,7 +378,7 @@ El resultado al correr todas las pruebas es:
 
 ![Alt text](image.png)
 
-Si bien se tiran advertencias, estas no afectan el desempeño o resultados de las pruebas y se pueden ignorar.
+Si bien se tiran advertencias, estas no afectan el desempeño o resultados de las pruebas y se pueden ignorar. Todas las pruebas son aprobadas cuando la base de datos esta corriendo.
 
 ---
 
