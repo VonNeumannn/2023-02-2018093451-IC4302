@@ -54,9 +54,14 @@ Para seguir los principios de normalización se tomó la decisión de  no almace
 - PageHasRedirect se calcula revisando si el atributo Redirect es distinto de NULL en la tabla LastRevision.
 
 #### Indices de Búsqueda
+##### Autonomous DB
 
-![Imagen de todos los indices](imgs/indexes.png)
-[//]: # (Poner el nombre de cada índice y explicar para qué sirve)
+![Imagen de todos los indices de autonomous DB](imgs/indexes.png)
+[//]: # (Lo que hacemos con esto es crear indices en cada campo donde queremos buscar, le asignamos un nombre, luego indicamos la columna que queremos indexar, al final las instrucciones INDEXTYPE IS CTXSYS.CONTEXT son debido a que el tipo CLOB en oracle no es indexable normalmente, pero con esto ya se pueden crear con normalidad.)
+
+##### Search Index Mongo Atlas
+![Imagen de todos los indices de mongo Atlas](imgs/indexMongo.png)
+[//]: # (Para crear un indice de busqueda lo que debemos hacer es mapear cada uno de los campos que queremos usar para buscar. En caso de definir facets se hace con los tipos llamados: StringFacet, NumberFacet o DateFacet, por facilidad se utilizó la herramienta para crear indices de mongo, pero también se pueden definir mediante json.)
 
 #### Stored Procedures Incluidos
 
@@ -95,12 +100,6 @@ Este método ingresa a la tabla File y revisa todos los nombres de los archivos 
 ![Alt text](imgs/spsite.png)
 
 Este método inserta los datos del sitio que aparece en un archivo específico de la tabla File, por lo tanto de parámetro se recibe el Id del File al que pertenece, junto con los datos que se quieren ingresar.
-
-##### BUSCAQUEDAGENERAL
-
-![BUSCAQUEDAGENERAL](imgs/spgeneralse.png)
-
-[//]: # (Explicar que hace el procedimiento)
 
 ### MongoDb Mapping
 
