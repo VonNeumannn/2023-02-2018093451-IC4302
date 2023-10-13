@@ -25,7 +25,6 @@ export default function Login() {
         mensajeError.textContent = "";
 
         mensajeError2.textContent = "";
-        console.log()
         
         modalInfo.classList.remove('ocultando')
         modalInfo.classList.add('mostrando')
