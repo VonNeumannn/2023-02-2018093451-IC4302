@@ -524,15 +524,6 @@ def showDocument():
         timeStamp = date_time.strftime("%Y-%m-%dT%H:%M:%S")
         title = ""
         try:
-            #Muestra la pagina según el id
-            queryOne = {
-            "search": {
-                "text": {
-                    "path": ["Title"],
-                    "query": titleDoc
-                }
-            }
-            }
             results = collection.find_one({"Title":titleDoc})
             #results = list(collection.find(queryOne))
             wikiText = results.get("LastRevisionData", {}).get("Text", {}).get("NormalText")
@@ -565,7 +556,7 @@ def rateDoc():
     #Log data
     date_time = datetime.now()
     timeStamp = date_time.strftime("%Y-%m-%dT%H:%M:%S")
-    title = ""
+    title = "   "
 
     if (int(tipoRecurso) == 1):
         conn = dbOracle_connection()

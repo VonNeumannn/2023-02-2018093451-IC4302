@@ -37,6 +37,7 @@ resource "oci_core_instance" "vm01" {
     }
     preserve_boot_volume = false
 
+
 }
 
 output "vm01_connect" {
