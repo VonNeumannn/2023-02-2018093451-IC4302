@@ -70,7 +70,7 @@ class test_api(unittest.TestCase):
         condition = ('Error' in response.json())
         self.assertEqual(condition, False)
 
-    def test_rating(self):
+    def test_ratingOracle(self):
         url = baseurl+ '/rating?title='+title+'&tipoRecurso=1'+'&rating='+rating
 
         response = requests.get(url)
@@ -79,7 +79,7 @@ class test_api(unittest.TestCase):
         condition = ('Error' in response.json())
         self.assertEqual(condition, False)
 
-    def test_rating(self):
+    def test_ratingMongo(self):
         url = baseurl+ '/rating?title='+title+'&tipoRecurso=2'+'&rating='+rating
 
         response = requests.get(url)
