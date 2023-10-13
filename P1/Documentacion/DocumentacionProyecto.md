@@ -393,46 +393,57 @@ La API se completó en un en un 90% la parte no implementada es la de los facets
 CORS(app): Cross-origin resource sharing, es un mecanismo que permite que se puedan solicitar recursos restringidos. Esto nos ayuda para poder enviar y solicitar datos desde la API y la UI
 Funciones:
 
-**dbOracle_connection():** Con este método nos conectamos a la base de datos de oracle mediante un user, password y un string que contiene los datos de conexión.
+- **dbOracle_connection():** Con este método nos conectamos a la base de datos de oracle mediante un user, password y un string que contiene los datos de conexión.
 
-**dbMongo_connection():** Método para conectar con la base de datos de mongo, mediante el string que nos da mongo.
+![Alt text](<imgs/Imagen de WhatsApp 2023-10-13 a las 04.06.42_325ace7f.jpg>)
 
-**dbLogs(title, timeStamp):** Esta función se encarga de insertar logs en una tabla NoSQL, con un mensaje y la hora de la consulta.
+- **dbMongo_connection():** Método para conectar con la base de datos de mongo, mediante el string que nos da mongo.
 
-**firebaseConnection():** Función para conectarse a firebase y retorna la conexión.
+![Alt text](<imgs/Imagen de WhatsApp 2023-10-13 a las 04.07.06_705463e5.jpg>)
+
+- **dbLogs(title, timeStamp):** Esta función se encarga de insertar logs en una tabla NoSQL, con un mensaje y la hora de la consulta.
+
+![Alt text](<imgs/Imagen de WhatsApp 2023-10-13 a las 04.07.39_f3bdbc53.jpg>)
+
+- **firebaseConnection():** Función para conectarse a firebase y retorna la conexión.
+
+![Alt text](<imgs/Imagen de WhatsApp 2023-10-13 a las 04.08.20_f4d77fe7.jpg>)
 
 ### **Enpoints:**
+
 **/register:** Es un post que pasa los datos necesarios en tipo json para registrarse en firebase y retorna un mensaje indicando que el registro fue exitoso.
 
-Imagen
+![Alt text](<imgs/Imagen de WhatsApp 2023-10-13 a las 04.08.52_6ae28e8a.jpg>)
+
 **/login:** Este es un post que recibe un email y contraseña, con esto se busca si existe en firebase en caso de ser así entonces comprueba si la contraseña es correcta y devuelta un mensaje de login exitoso.
 
-IMAGNE
+![Alt text](<imgs/Imagen de WhatsApp 2023-10-13 a las 04.09.36_ffdb8148.jpg>)
 
-**/search:** En este endpoint GET se tienen parámetros en la URL,  stringBusqueda, este es el que contiene el string que queremos buscar. tipoRecurso, contiene en cuál base de datos queremos buscar(1 para autonomous, 2 para mongo), luego de que se extraen los parámetros se comprueba el tipo de BD, si es autonomous, se define una consulta SQL(se adjunta imagen de la consulta), esta consulta hace un SELECT para obtener el título y los datos que ocupamos, gracias a los índices creados podemos usar la instrucción CONTAINS de oracle sql, inmediatamente después se ejecuta la consulta y se guardan los datos para ser retornados en formato JSON, y realizar su respectiva inserción a la tabla de logs. Al final cierra la conexión.
+**/search:** En este endpoint GET se tienen parámetros en la URL,  stringBusqueda, este es el que contiene el string que queremos buscar. tipoRecurso, contiene en cuál base de datos queremos buscar(1 para autonomous, 2 para mongo), luego de que se extraen los parámetros se comprueba el tipo de BD, si es autonomous, se define una consulta SQL, esta consulta hace un SELECT para obtener el título y los datos que ocupamos, gracias a los índices creados podemos usar la instrucción CONTAINS de oracle sql, inmediatamente después se ejecuta la consulta y se guardan los datos para ser retornados en formato JSON, y realizar su respectiva inserción a la tabla de logs. Al final cierra la conexión.
 
-Imagen
+![Alt text](<imgs/Imagen de WhatsApp 2023-10-13 a las 04.11.10_db49d2bb.jpg>)
 
 Cuando la base es Mongo Atlas se obtiene el stringBusqueda, se llama a la función para conectarse a mongo, y se define la colección con la que vamos a trabajar, luego se define la consulta para usar con el método aggregate() de mongo, la consulta contiene las siguientes partes: primero, seleccionamos el índice creado de los campos donde vamos a buscar, luego definimos las rutas donde vamos a buscar así como la palabra que queremos buscar, además de utilizar la funcionalidad que tiene mongo para realizar highlight de los resultados, por último definimos los datos que queremos que muestre la consulta.
 La segunda consulta define los los buckets(como los tags de cada facet) y límites(rangos) que va a tener cada facet, además de esto obtenemos los facets con su bucket, específicamente para la búsqueda. Luego de esto utilizamos la función aggregate() para agregar en un stage en mongo, luego se retorna el los resultados de la búsqueda y los facets correspondientes.
-Imagen
+
+![Alt text](<imgs/Imagen de WhatsApp 2023-10-13 a las 04.11.38_32c3252a.jpg>)
 
 **/document:** Es un GET obtenemos los parámetros title, tipoRecurso. Si es autonomousDB, definimos una consulta sql para obtener el documento buscando por title, se ejecuta esta consulta la cual devuelve el Texto limpio de, el link a wikipedia y el Rating, luego retorna el documento con formato json. Además de insertar en la tabla logs.
 
-Imagen
+![Alt text](<Imagen de WhatsApp 2023-10-13 a las 04.12.07_29d480a7.jpg>)
 
 En caso de mongo atlas, primero encuentra según el title recibido como parámetro, luego obtiene el texto normalizado, seguido del link a wikipedia así como el rating actual de la página. Si encuentra el documento lo retorna como un tipo json, si no muestra un mensaje de error e inserta en la tabla de logs.
 
-imagen 
+![Alt text](<Imagen de WhatsApp 2023-10-13 a las 04.12.28_bbf9c493.jpg>)
 
 **/rating:** Este endpoint va a realizar un GET que tiene como parametros, title, tipoRecurso, rating. Si es autonomous entonces realiza una consulta sql que actualiza el campo rating de la tabla Page, para sumar o restar uno dependiendo del contenido de rating, luego retorna un mensaje si la tabla se actualizó.
 
-imagen
-
 Para mongo atlas, realiza un update en la colección según el título para hacer un incremento o decremento del rating, y lanza un mensaje.
-imagen
+
+![Alt text](<Imagen de WhatsApp 2023-10-13 a las 04.13.00_22785211.jpg>)
 
 ##### Pruebas realizadas (UnitTests)
+
 Para cada prueba se construye una url con el endpoint necesario además de agregarle los parámetros necesarios. 
 
 **test_login:** Realiza la comprobación de que se realiza el login correctamente, toma los datos dados al principio. Es una consulta del tipo POST
@@ -469,7 +480,6 @@ En esta terminal se van a poder ejecutar distintos comandos dependiendo de lo qu
 
 Cambiar el archivo DockerImages.sh que se encuentra en la carpeta de automatización dentro de P1.
 En específico se debe cambiar el nombre del usuario por aquel con el que se hizo login y en el que se quieren subir las imágenes. Ej:
-
 
 ![Alt text](imgs/man.png)
 
