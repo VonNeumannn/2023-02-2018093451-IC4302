@@ -34,7 +34,6 @@
       - [Aclaración Importante del modelo](#aclaración-importante-del-modelo)
       - [Indices de Búsqueda](#indices-de-búsqueda)
         - [Autonomous DB](#autonomous-db)
-        - [Search Index Mongo Atlas](#search-index-mongo-atlas)
       - [Stored Procedures Incluidos](#stored-procedures-incluidos)
         - [INSERT\_PAGE\_ALL](#insert_page_all)
         - [INSERT\_LINK](#insert_link)
@@ -44,6 +43,8 @@
         - [GET\_FILENAMES](#get_filenames)
         - [INSERT\_SITE](#insert_site)
     - [MongoDb Mapping](#mongodb-mapping)
+      - [Base de datos y Colecciones](#base-de-datos-y-colecciones)
+      - [Search Index Mongo Atlas](#search-index-mongo-atlas)
   - [Componentes del Proyecto](#componentes-del-proyecto)
     - [Object Storage](#object-storage)
     - [DataLoader](#dataloader)
@@ -127,12 +128,6 @@ Para seguir los principios de normalización se tomó la decisión de  no almace
 
 Lo que hacemos con esto es crear indices en cada campo donde queremos buscar, le asignamos un nombre, luego indicamos la columna que queremos indexar, al final las instrucciones INDEXTYPE IS CTXSYS.CONTEXT son debido a que el tipo CLOB en oracle no es indexable normalmente, pero con esto ya se pueden crear con normalidad.
 
-##### Search Index Mongo Atlas
-
-![Imagen de todos los indices de mongo Atlas](imgs/indexMongo.png)
-
-Para crear un indice de busqueda lo que debemos hacer es mapear cada uno de los campos que queremos usar para buscar. En caso de definir facets se hace con los tipos llamados: StringFacet, NumberFacet o DateFacet, por facilidad se utilizó la herramienta para crear indices de mongo, pero también se pueden definir mediante json.
-
 #### Stored Procedures Incluidos
 
 ##### INSERT_PAGE_ALL
@@ -171,7 +166,41 @@ Este método ingresa a la tabla File y revisa todos los nombres de los archivos 
 
 Este método inserta los datos del sitio que aparece en un archivo específico de la tabla File, por lo tanto de parámetro se recibe el Id del File al que pertenece, junto con los datos que se quieren ingresar.
 
+---
+
 ### MongoDb Mapping
+
+#### Base de datos y Colecciones
+
+Para mongo db los datos decidimos distribuirlos de la siguiente manera:
+
+Existe una base de datos llamada "Wikipedia", esta contiene dos colecciones donde se van a almacenar todos los datos que se procesan. A diferencia de autonomous no ocupamos una colección para cada tipo de dato como con links y restricciones, en lugar de eso, implementamos solo dos colecciones:
+
+**Colección File:** Esta colección contiene la combinación de los datos que en autonomous se almacenan dentro de las tablas File y Site. Cada entrada tendrá la siguiente forma
+
+{
+  "Filename": "Nombre del archivo que se proceso" --> String
+
+  "FileData": Datos del archivo {"Sitename": , "dbname": ,"Language": }
+}
+
+Estos datos separados permiten evitar recorrer los datos de las páginas si solamente se quieren revisar cuales archivos han sido procesados ya en la base de datos y cuales son sus metadatos
+
+**Colección Page:** Esta colección, por otro lado, combina todas las tablas asociadas a un Page y sus atributos en documentos con todos estos datos. La estructura de una entrada en esta colección es:
+
+
+![Alt text](imgs/mapping.png)
+
+
+Todos los datos se almacenan en un documento de esta forma, algo importante a destacar es que como MongoDb es menos estricto sobre redundancia de datos y aspectos de normalización. En mongoDb si almacenamos los parámetros hasredirect y LinkNumber como atributos del page a pesar de que se calculan usando otros atributos del page
+
+
+#### Search Index Mongo Atlas
+
+![Imagen de todos los indices de mongo Atlas](imgs/indexMongo.png)
+
+Para crear un indice de busqueda lo que debemos hacer es mapear cada uno de los campos que queremos usar para buscar. En caso de definir facets se hace con los tipos llamados: StringFacet, NumberFacet o DateFacet, por facilidad se utilizó la herramienta para crear indices de mongo, pero también se pueden definir mediante json.
+
 
 [//]: # (Poner una Imagen del Mapping en Mongo, Porfa alguien que explique esto, <== ayuden a este pobre hombre José)
 
@@ -542,7 +571,7 @@ Una vez ejecutado, la infrastructura en la cuenta de Oracle Cloud Infrastructre 
 
 Una vez los administradores suben este documento el componente loader en el fondo comienza a procesarlo y a subir archivos a las bases de datos. Después ya los datos conforme son procesados el cliente los puede ver en el UI.
 
-Para conectar con el UI
+**Para conectar con el UI**
 
 Una vez el terraform apply se haya ejecutado, nos dará una dirección ip para poder conectarnos por SSH, esta misma dirección la usamos para llamar a la UI mediante la dirección: <dirección>:8080/. Ya con esto tendremos accesso, a las funcionalidades.
 
