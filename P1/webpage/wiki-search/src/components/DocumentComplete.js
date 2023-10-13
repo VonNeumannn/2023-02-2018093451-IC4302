@@ -1,12 +1,15 @@
 import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import ModalInfo from "./ModalInfo";
+import Like from '../assets/like.png';
+import Dislike from '../assets/dislike.png';
 
 import axios from 'axios'
 
 export default function DocumentComplete() {
         const [myJson, setJson] = useState({});
         const [isLoading, setLoading] = useState(true);
-      
+        
+
         // Obtiene la URL actual del navegador
         const urlActual = window.location.href;
       
@@ -18,7 +21,11 @@ export default function DocumentComplete() {
         const tituloCambiado=titulo.replace(/-/g, " ")
         document.title = tituloCambiado
       
+        
+
         useEffect(() => {
+          const modalInfo = document.getElementById("modal-info")
+          modalInfo.classList.add('mostrando')
           const apiUrl =
             "http://127.0.0.1:5000/document?title=" +
             tituloCambiado +
@@ -49,8 +56,11 @@ export default function DocumentComplete() {
         useEffect(() => {
           try {
             if (!isLoading && myJson.wikiText) {
-              const html = wikiToHtml(myJson.wikiText);
+              const html = myJson.wikiText;
               document.getElementById("contenido").innerHTML = resaltarFrase(html, titulo);
+              const modalInfo = document.getElementById("modal-info")
+              modalInfo.classList.remove('mostrando')
+              modalInfo.classList.add('ocultando')
             }
           } catch (error) {
             console.error(error);
@@ -73,61 +83,10 @@ function resaltarFrase(texto, frase) {
 
   
 
-    function wikiToHtml(wikiText) {
-        let htmlText = wikiText;
-    
-        // Convertir negrita
-        htmlText = htmlText.replace(/'''(.*?)'''/g, '<b>$1</b>');
-    
-        // Convertir cursiva
-        htmlText = htmlText.replace(/''(.*?)''/g, '<i>$1</i>');
-    
-        // Convertir encabezados
-        for(let i=6; i>0; i--) {
-            let equals = '='.repeat(i);
-            let h = 'h' + i;
-            let re = new RegExp('^' + equals + '(.*?)' + equals + '$', 'gm');
-            htmlText = htmlText.replace(re, '<'+h+'>$1</'+h+'>');
-        }
-    
-        // Convertir enlaces internos
-        htmlText = htmlText.replace(/\[\[(.*?)\]\]/g, function(match, p1) {
-            let parts = p1.split('|');
-            if(parts.length == 2) {
-      
-                return '<Link to="' + parts[0] + '">' + parts[1] + '</Link>';
-            } else {
-                return '<Link to="' + parts[0] + '">' + parts[0] + '</Link>';
-            }
-        });
-    
-        // Convertir enlaces externos
-        htmlText = htmlText.replace(/\[(http.*?) (.*?)\]/g, '<a target="_blank"href="$1">$2</a>');
-    
-        // Convertir listas sin orden
-        htmlText = htmlText.replace(/^(\*.*\n)+/gm, function(match) {
-            return '<ul>\n' + match.replace(/^\*(.*)\n/gm, '<li>$1</li>\n') + '</ul>\n';
-        });
-    
-        // Convertir listas ordenadas
-        htmlText = htmlText.replace(/^(\#.*\n)+/gm, function(match) {
-            return '<ol>\n' + match.replace(/^\#(.*)\n/gm, '<li>$1</li>\n') + '</ol>\n';
-        });
-    
-        // Convertir citas
-        htmlText = htmlText.replace(/^:(.*?)(?=\n\n|$)/gm, '<blockquote>$1</blockquote>');
-    
-        // Convertir lÃ­neas horizontales
-        htmlText = htmlText.replace(/^----$/gm, '<hr>');
 
-        htmlText = htmlText.replace(/<pre>([\s\S]*?)<\/pre>/g, function(match, p1) {
-            return '<pre>' + p1.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</pre>';
-        });
-
-        htmlText = htmlText.replace(/[[File:(.*?)]]/g, "");
-    
-
-        return htmlText;
+    function OnClickRatings(rating){
+      const counter = document.getElementById("counter")
+      counter.innerHTML = parseInt(counter.innerHTML) + rating
     }
 
 
@@ -141,11 +100,27 @@ function resaltarFrase(texto, frase) {
     return (
         <div className="login-screen-view">
             <div className="document-complete-frame">
-            
+                <ModalInfo text={"Se está buscando su documento. Espere un momento por favor."} />
                 <a id="linkMain" target="_blank" href={myJson.wikiLink}>{titulo.replace(/-/g, " ")}</a>
-                <div id="contenido">
+                <div className="content-frame">
+                  <div className="rating-frame">
+                    <div className="rating">
+                      <h3 className="title-rating">Rating</h3>
+                      <p className="rating-amount" id="counter">{myJson.rating}</p>
+                      <div className="rating-buttons">
+                        <img src={Like} alt="like buttom" onClick={()=>OnClickRatings(1)}/>
+                        <img src={Dislike} alt="dislike buttom" onClick={()=>OnClickRatings(-1)}/>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div id="contenido">
+
+                  </div>
 
                 </div>
+                
+
             </div>
         </div>
     );
