@@ -25,6 +25,6 @@ sudo docker push jcardonar/api-wikidb
 # Imagen para crear el componente Web
 cd ..
 cd UI
-sudo docker build -t joctan04/docker-react-i:latest .
+sudo docker build -t jcardonar/docker-react-i:latest .
 sudo docker images
-sudo docker push joctan04/docker-react-i:latest
+sudo docker push jcardonar/docker-react-i:latest

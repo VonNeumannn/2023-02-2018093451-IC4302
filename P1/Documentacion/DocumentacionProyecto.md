@@ -17,8 +17,10 @@
 - Gerardo Nereo Campos Araya
 
 ## Segundo Semestre 2023
-
+---
 La presente es la documentación del proyecto 1 , que consistió en desarrollar un sistema para desplegar y procesar páginas de wikipedia a través de los Wikidumps XML. En este documento se detalla la funcionalidad de los componentes implementados, las pruebas unitarias realizadas, el manual de usuario para operar el sistema, y las conclusiones y recomendaciones para mejoras futuras. El objetivo es proporcionar una visión integral de la solución desarrollada y sus capacidades
+
+---
 
 ## Infraestructura Propuesta para las Bases Utilizadas
 
@@ -26,8 +28,7 @@ La presente es la documentación del proyecto 1 , que consistió en desarrollar 
 
 Para mantener una buena consistencia de los datos, para nuestra base SQL en oracle, el modelo propuesto es:
 
-![Imagen del modelo](image.jpg)
-
+![Imagen del modelo](imgs/DiagramaER_SQL.png)
 #### Tablas y datos importantes
 
 - La **tabla File** almacena metadatos de los archivos de los Wiki Dumps, cuyos datos ya han sido procesados por el loader. Cada archivo tiene un ID único y un nombre. Esta tabla es relevante ya que a través de la información contenida aquí se puede revisar si ya los datos de una página fueron ingresados a la base anteriormente y así evitar que el Loader los ingrese por segunda vez.
@@ -55,63 +56,64 @@ Para seguir los principios de normalización se tomó la decisión de  no almace
 - PageHasRedirect se calcula revisando si el atributo Redirect es distinto de NULL en la tabla LastRevision.
 
 #### Indices de Búsqueda
+##### Autonomous DB
 
-![Imagen de todos los indices](image.jpg)
+![Imagen de todos los indices de autonomous DB](imgs/indexes.png)
 
-[//]: # (Poner el nombre de cada índice y explicar para qué sirve)
+Lo que hacemos con esto es crear indices en cada campo donde queremos buscar, le asignamos un nombre, luego indicamos la columna que queremos indexar, al final las instrucciones INDEXTYPE IS CTXSYS.CONTEXT son debido a que el tipo CLOB en oracle no es indexable normalmente, pero con esto ya se pueden crear con normalidad.
+
+##### Search Index Mongo Atlas
+![Imagen de todos los indices de mongo Atlas](imgs/indexMongo.png)
+
+Para crear un indice de busqueda lo que debemos hacer es mapear cada uno de los campos que queremos usar para buscar. En caso de definir facets se hace con los tipos llamados: StringFacet, NumberFacet o DateFacet, por facilidad se utilizó la herramienta para crear indices de mongo, pero también se pueden definir mediante json.
 
 #### Stored Procedures Incluidos
 
 ##### INSERT_PAGE_ALL
 
-![Imagen del codigo](image.jpg)
+![INSERT_PAGE_ALL](imgs/spipa.png)
 
-El objetivo de este procedimiento es agregar una instancia a la tabla página junto con los datos de su última revisión. Se reciben todos los datos para una entrada en la tabla page excepto el parámetro rating. El método está hecho para funcionar en el loader en conjunto con los métodos INSERT_RESTRICTION e  INSERT_LINK. Estos tres se encargan de ingresar todos los datos de una página de wikipedia a la base de datos.
-
-![Foto del loader donde se implementa](image.jpg)
+El objetivo de este procedimiento es agregar una instancia a la tabla página junto con los datos de su última revisión. Se reciben todos los datos para una entrada en la tabla page excepto el parámetro rating. El método está hecho para funcionar en el loader en conjunto con los métodos INSERT_RESTRICTION e  INSERT_LINK. Estos tres procedimientos se encargan de ingresar todos los datos de una página de wikipedia a la base de datos.
 
 ##### INSERT_LINK
 
-![Imagen del codigo](image.jpg)
+![INSERT_LINK](imgs/splink.png)
 
 Este método ingresa individualmente los datos de un Link a su tabla respectiva, aparte de esto conecta el link a una página en la tabla PageXLink. Esto para posteriormente poder obtener todos los links asociados a una página. Importante recalcar que el método está planeado para llamarse múltiples veces por cada link que tenga una página. Este ciclo de llamadas se implementa dentro del Loader.
 
-![Foto del loader donde se implementa](image.jpg)
-
 ##### INSERT_RESTRICTION
 
-![Imagen del codigo](image.jpg)
+![INSERT_RESTRICTION](imgs/sprestriction.png)
+
+
+#### Dentro del Loader estas funciones se implementan en el siguiente código
+![Alt text](imgs/insertPage.png)
 
 ##### INSERT_FILE
 
-![Imagen del codigo](image.jpg)
+![INSERT_FILE](imgs/spfile.png)
 
 Este procedimiento simplemente recibe el nombre de un archivo que se va a procesar en la base de datos, esto para tener un registro de los datos que ya se han ingresado a la base. El método se utiliza dentro del Loader para verificar si se ocupa procesar un archivo en el bucket e ingresarlo a las base.
 
 ##### GET_FILENAMES
-
-![Imagen del codigo](image.jpg)
+![Imagen del codigo](imgs/spgetfiles.png)
 
 Este método ingresa a la tabla File y revisa todos los nombres de los archivos que se han procesado en la base y los regresa en forma de un cursor. Una vez en el loader este cursor se puede procesar y convertir en una lista con los nombres.
 
 ##### INSERT_SITE
-
-![Imagen del codigo](image.jpg)
+![Alt text](imgs/spsite.png)
 
 Este método inserta los datos del sitio que aparece en un archivo específico de la tabla File, por lo tanto de parámetro se recibe el Id del File al que pertenece, junto con los datos que se quieren ingresar.
-
-##### BUSCAQUEDAGENERAL
-
-![Imagen del codigo](image.jpg)
-
-[//]: # (Explicar que hace el procedimiento)
 
 ### MongoDb Mapping
 
 [//]: # (Poner una Imagen del Mapping en Mongo, Porfa alguien que explique esto, <== ayuden a este pobre hombre José)
 
+----
+
 ## Componentes del Proyecto
 
+----
 ### Object Storage
 
 Para el componente Object Storage las indicaciones del proyecto dicen que se deben de subir 3 archivos para cada procesamiento de las páginas en el loader, estos son:
@@ -125,32 +127,206 @@ Para el componente Object Storage las indicaciones del proyecto dicen que se deb
 También se menciona que estos archivos serán manualmente descargados, descomprimidos y subidos dentro de Object Storage.
 Para el proyecto implementamos esto de forma mucho más eficiente. Las mejoras que hicimos se dividen en dos:
 
-- **No hace falta descomprimir los datos primero para subirlos:**
+- #### **No hace falta descomprimir los datos primero para subirlos:**
 
 Para evitar gastar más espacio del necesario en el ambiente local donde se suben los datos y para que sea más rápido el proceso de subir los datos al bucket, optamos por implementar dentro del loader una función que recibe un archivo comprimido tipo bz2 y fácilmente extrae sus datos. Esto evita tener que descomprimir los datos antes de subirlos al bucket.
 
-![Foto de la funcion](image.jpg)
+![Alt text](imgs/decompressLoader.png)
 
-- **Solo ocupamos un archivo para todos los datos**
+- #### **Solo ocupamos un archivo para todos los datos**
 
 Las instrucciones del proyecto indican que para obtener los atributos PageWikipediaLink y PageLinks debíamos utilizar los archivos "enwiki-latest-abstract*.xml.gz" o "enwiki-latest-pages-articlesmultistream-index*.txt-pp.bz2".
 Sin embargo, nosotros logramos obtener estos datos a través del archivo "enwiki-latest-pages-articlesmultistream" utilizando la librería mwParserfromhell para parsear el wikitext y extraer estos elementos. Esto es posible gracias a que el wikitext de cada página de Wikipedia contiene los links hacia otras páginas de Wikipedia, y por lo tanto parseando solo los links se puede armar una lista con todos estos.
 
-![FOTO DE DONDE SE GENERA ESTA INFO CON MWPARSERFROMHELL](image.jpg)
+![ESTA INFO CON MWPARSERFROMHELL](imgs/parser.png)
 
-Para esto nos basamos en los ejemplos de la documentación de Mwparser fromhell que se encuentra en:
+Para esto nos basamos en los ejemplos de la documentación de Mwparser fromhell que se encuentra en: https://github.com/earwig/mwparserfromhell y  https://mwparserfromhell.readthedocs.io/en/latest/api/mwparserfromhell.html#id1
 
 Por lo tanto para el funcionamiento correcto de todo el programa, solamente es necesario descargar el archivo comprimido  enwiki-latest-pages-articlesmultistream. para las páginas que se quieran procesar y se sube directamente al bucket, sin tener que descomprimir o subir otros archivos.
 
+---
+
 ### DataLoader
 
-Este componente está 100% funcional de acuerdo con lo solicitado en el proyecto, algunas aclaraciones importantes sobre este elemento son:
+Este componente está 100% funcional de acuerdo con lo solicitado en el proyecto, el código esta 100% documentado y se hicieron los UnitTests respectivos.
 
-[//]: # (Incluir que se puede setear una cantidad específica de archivos a procesar y enseñar el código)
+Algunas aclaraciones importantes sobre este elemento son:
 
+##### Puntos Extra
+
+Se implementaron los Puntos Extra (Generar texto limpio de Wikipedia) usando MwParser from Hell. Para esta sección decidimos agregar un campo adicional a la tabla page en el Modelo SQL y en el mapping de Mongo que es correspondiente al texto limpio. De esta forma podemos acceder tanto al texto limpio como al Wikitext.
+
+El código donde se parsea el texto es:
+
+![Parser](imgs/parser.png)
+
+Por lo tanto el loader cada vez que procese una página llamará este método específico y guarda el texto limpio asociado a esa pagina.
+
+
+##### Duración del Código 
+
+La duración del código para procesar cada una de las páginas tiene una duración muy corta, sin embargo, debido a que cada documento que se va a procesar tiene miles de páginas se puede durar bastante procesando los archivos. **Por lo tanto, para comodidad del usuario, el codigo para procesar un archivo contiene una línea de código donde se puede definir cuantos archivos se quiere procesar** 
+
+La siguiente linea se presenta en la función `process_file` en la siguiente sección:
+
+![Alt text](imgs/contadorInsert.png)
+
+Se puede definir cont == (la cantidad que uno desee de articulos a procesar)
+
+Este código va a estar comentado en el documento que se va a subir, entonces para habilitarlo, antes de habilitar la infrastuctura se puede quitar los hashtags a la izquierda e ingresar el número que se quiera procesar. Esta función es completamente opcional
 ### Pruebas realizadas (UnitTests)
 
-#### API
+
+#### Para los Unit Tests del Loader se realizaron 
+
+Primero se probaron las funciones del Loader para conectar con el bucket de OCI, obtener los archivos en el bucket, descargar uno de estos archivos y descomprimirlo
+
+Estos Unit Tests son los siguientes:
+
+![Unit Tests1](imgs/TestsBucket.png)
+
+
+##### test_connect_bucket()
+
+En el primer test se verifica si es posible establecer una conexción con el bucket de autonomous usando la configuración alambrada desde el main. Se indica que se espera obtener un cliente de Object Storage. Luego se compara el tipo de dato que regresa la función de conexión con el cliente.
+
+Si el tipo de dato que regresa la función es un cliente y no es None se pasa el test
+
+##### test_getFiles()
+
+En este test, una vez se probo la conexión al bucket, se prueba obteniendo todos los archivos que existen dentro del el. Si el resultado obtenido de esta operación es una lista se considera completo el test.
+
+No se reviso si el tipo de dato adentro eran archivos realmente porque puede estar vacio el bucket.
+
+##### test_get_bucket_file()
+
+Este experimento prueba obteniendo los nombres de todos los objetos en el bucket, debido a que ocupa los dos métodos anteriores se prueba hasta que se pasaron los tests de los dos anteriores.
+
+Este método prueba estableciendo una conexión con el bucket, obteniendo la lista de archivos y en base a esto pueden pasar dos escenarios:
+
+1. Si hay datos en el bucket se prueba descargando el promer archivo de esos datos y que si se descargue correctamente
+2. Si no hay datos en el bucket no se prueba descargar y simplemente se pasa el test
+
+
+Para pasar el test se debe revisar que se regrese el nombre del archivo descargado o que se ignore en caso de ser vacío.
+
+
+Probando estos 3 métodos sobre las funciones del Loader:
+
+![Alt text](imgs/unittestresult1.png)
+
+--- 
+Luego se probaron métodos para probar si los métodos de conexión e inserción en las bases de datos funcionaban correctamente:
+
+##### Pruebas para Mongo
+
+![Alt text](imgs/testConnMongo.png)
+
+
+Para Mongo se hacen dos pruebas:
+
+##### test_MongodbConn()
+
+Este test se asegura que el método para conectar con Mongo Atlas sea completamente funcional, obtiene la conexión y se asegura que el método no regrese None.
+
+Luego revisa que en la conexión a Mongo exista la base de datos Wikipedia dentro del cluster al que se conecto. Esto es esencial ya que sin base de datos los inserts no van a servir.
+
+Si se logra se considera que se paso el test.
+##### test_MongoGet()
+
+Este método prueba obteniendo los nombres de los archivos que se han registrado en la base MongoDb. Es una operación de tipo GET, lo que se espera es verificar si el método regresa una lista ya sea vacía o con nombres de archivos. Si no regresa una lista no esta funcionando adecuadamente.
+
+Luego de probar el Get se prueba insertando un dato nuevo a la colección y luego volviendo a llamar al metodo de get para verificar si realmente se agrego un archivo nuevo. Una vez se verifica que si se agrego se elimina el dato de prueba y se considera el test completado.
+
+---
+
+##### Pruebas para Autonomous SQL
+
+Al igual que con mongo, en Autonomous se probaron los métodos del loader para conectar e insertar datos dentro de la base. Estos tests fueron:
+
+![Alt text](imgs/PruebaconnSQL.png)
+
+
+##### test_oracle_connection()
+Esta prueba verifica si se puede establecer conexión con Oracle Cloud Infrastructre y entrar a la base Autonomous.
+
+El método es exitoso si la conexión es distinta de None. Despúes de verificar esto el test se considera completado.
+
+##### test_oracleGet()
+
+Esta prueba, similar a la de Mongo, se conecta a la base de datos y obtiene los nombres de todos los archivos que hasta el momento han sido procesados. Para que esta parte sea exitosa el método debe de regresar un objeto de tipo lista, ya sea vacía o con componentes.
+
+Una vez hecho esto se prueba el método para ingresar un archivo a la base de datos y se verifica que al obtener nuevamente la lista de archivos se haya agregado uno.
+
+Si esto es exitoso se considera la prueba como terminada.
+
+
+Los resultados al ejecutar estas pruebas son:
+
+![Alt text](imgs/testsconn.png)
+
+
+---
+
+Después se prueba la función para comparar las listas de archivos en cada base y verificar si coinciden con los archivos que están almacenados en el bucket. Si en el bucket hay un archivo que no sale en alguna de las bases se procede a retornar el nombre del archivo y la base donde se desea ingresar.
+
+
+![Alt text](imgs/VerificarArchivosFaltantes.png)
+
+Para este método, se hacen distintas pruebas una donde SQL no tenga el archivo, una donde Mongo no tenga el archivo, una donde ambos no lo tengan y una donde ambos si lo tengan. 
+
+* Cuando SQL no tiene el archivo se espera recibir el nombre y el string 'SQL'
+
+* Cuando Mongo no tiene el archivo se espera recibir el nombre y el string 'MONGO'
+
+* Cuando ninguna lo tiene se regresa el nombre y se espera el string 'AMBOS'
+
+* Cuando ambos tienen el archivo se espera obtener de output None
+
+Una vez que se comprueban todos los casos exitosamente se considera el unittest como completado
+
+El resultado de este test es:
+
+![Alt text](imgs/resultverify.png)
+
+---
+Finalmente, se prueban las funciones para parsear wikitext y obtener links
+
+![Alt text](imgs/TestParser.png)
+
+
+##### test_parse_text()
+
+Esta función contiene un wikitext de ejemplo y texto limpio, este texto limpio representa el output esperado después de parsear el wikitext para quitarle todos los elementos adicionales.
+
+El test funciona si al parsear el wikitext si se obtiene el texto esperado. Una vez revisado esto se considera el test como completado
+
+##### test_get_links()
+
+Similar a la pasada, esta función tiene un wikitext ejemplo que contiene lins, también se tiene una lista con los links que se espera que el método get_lins regrese en base a ese texto. 
+
+Si los links obtenidos al ejecutar el método son iguales a los links esperados, se considera completado el Unittest
+
+
+Corriendo estas pruebas se obtiene:
+
+![Alt text](imgs/testsparserresult.png)
+
+---
+
+#### Aclaración
+
+Hubo algunos métodos en el código para el que no se hicieron unit tests ya que son una combinación de los métodos que si se probaron a través de las pruebas. Un ejemplo de esto es la función dataloader(), la cuál consiste de una combinacion de las funciones de conectar, obtener archivos y parsear. 
+
+El resultado al correr todas las pruebas es:
+
+![Alt text](image.png)
+
+Si bien se tiran advertencias, estas no afectan el desempeño o resultados de las pruebas y se pueden ignorar.
+
+
+---
+### API
 
 [//]: # (Breve explicación, aclaraciones, explicar cada una de las direcciones  Documentación de los endpoints de Mongo Atlas utilizados, se debe apoyar con ejemplos de su código Pruebas realizadas UnitTests)
 
@@ -168,23 +344,23 @@ Aqui va la explicacion
 
 En la primer pantalla de la aplicación se observará recuadro en el centro con la leyenda "Login WikiSearch". En esta parte se deben de poner las credenciales de acceso a para poder ingresar a realizar las búsquedas.
 
-![Primer pantalla - Login](image.png)
+![Primer pantalla - Login](imgs/image.png)
 
 En caso de que se intente entrar con las credenciales vacias o alguna de ellas vacia, la aplicación le mostrará los errores correspondientes:
 
-![Alt text](image-1.png)
+![Alt text](imgs/image-1.png)
 
 Si no se tiene una cuenta y se intenta entrar con credenciales no válidas, se obtendrá el mensaje correspondientes:
 
-![Alt text](image-2.png)
+![Alt text](imgs/image-2.png)
 
 Mensaje de usuario no encontrado:
 
-![Alt text](image-4.png)
+![Alt text](imgs/image-4.png)
 
 **Nota:** Al tocar el ojo que está al lado del espacio de la contraseña se podrá ver lo que se escribió y al tocarlo de nuevo volverá a estar oculto:
 
-![Alt text](image-3.png)
+![Alt text](imgs/image-3.png)
 
 **Importante:** Cuando no se tiene una cuenta se debe ir a la parte de abajo donde dice "Registrate aquí" en azul. Al hacer clic sobre este texto azul se redirigirá a lapantalla de registro que será explicada adelante.
 
@@ -194,19 +370,19 @@ Cuando el usuario y contraseña son válidos, la aplicación lo redirigirá a la
 
 En esta pantalla se tendrá lo siguiente una vez que se entre:
 
-![Alt text](image-5.png)
+![Alt text](imgs/image-5.png)
 
 Una vez en esta pantalla se podrá realizar el registro al llenar los datos que se solicitan, pero si un dato está vacio se obtendrá el error correspondiente:
 
-![Alt text](image-6.png)
+![Alt text](imgs/image-6.png)
 
 Una vez que se llenen los datos de manera correcta se debe de ver algo así:
 
-![Alt text](image-7.png)
+![Alt text](imgs/image-7.png)
 
 Una vez todo esté listo se debe dar clic sobre el boton que dice "Confirmar", al tener toda la información y dar clic, se recibirá el siguiente mensaje:
 
-![Alt text](image-8.png)
+![Alt text](imgs/image-8.png)
 
 Al dar clic sobre Aceptar, será redireccionado a la pantalla de Login.
 
@@ -214,7 +390,7 @@ Al dar clic sobre Aceptar, será redireccionado a la pantalla de Login.
 
 En esta pantalla se tendrá lo siguiente una vez que se entre:
 
-![Alt text](image-9.png)
+![Alt text](imgs/image-9.png)
 
 En esta pantalla se cuenta con los siguientes elementos:
 
@@ -224,19 +400,19 @@ En esta pantalla se cuenta con los siguientes elementos:
 
 Si se realiza una búsqueda con la barra vacía se mostrará el siguiente error:
 
-![Alt text](image-10.png)
+![Alt text](imgs/image-10.png)
 
 Para seguir buscando solo se presiona aceptar.
 
 Si se realiza una búsqueda y no hay se encuentran coincidencias con lo que se está buscando se mostrará el siguiente mensaje:
 
-![Alt text](image-11.png)
+![Alt text](imgs/image-11.png)
 
 ### Página buscar con resultados
 
 Cuando la búsqueda si encuentra algo, se mostrará de la siguiente manera:
 
-![Alt text](image-12.png)
+![Alt text](imgs/image-12.png)
 
 En esta parte tendremos la columna izquierda la cual corresponde a los facets de cada documento. Sin embargo **la funcionalidad de buscar mediante ellos será implementada en futuras versiones de la aplicación**.
 
@@ -248,11 +424,11 @@ Una vez se encuentre el articulo deseado, se puede dar clic sobre el titulo del 
 
 Para mostrar esta pantalla usaremos la palabra "Anarchism", la pantalla se mostrará de la siguiente manera:
 
-![Alt text](image-13.png)
+![Alt text](imgs/image-13.png)
 
 ## Final
 
-Esta sería la guía para el uso de la página WikiSearch. Cualquier error o inconveniente, favor comunirlo a cualquiera de los correos:
+Esta sería la guía para el uso de la página WikiSearch. Cualquier error o inconveniente, favor comunicarlo a cualquiera de los correos:
 
 - [joctan@estudiantec.cr](mailto:joctan@estudiantec.cr)
 - [justingilberto@estudiantec.cr](mailto:justingilberto@estudiantec.cr)
@@ -260,28 +436,28 @@ Esta sería la guía para el uso de la página WikiSearch. Cualquier error o inc
 
 ## Recomendaciones
 
-Siempre documentar apropiadamente el código con comentarios explicativos y hacer unit tests que validen cada componente. De esta forma se facilita enormemente la lectura y depuración del código, tanto para uno mismo como para otros miembros del equipo
+1. Siempre documentar apropiadamente el código con comentarios explicativos y hacer unit tests que validen cada componente. De esta forma se facilita enormemente la lectura y depuración del código, tanto para uno mismo como para otros miembros del equipo
 
-En lugar de implementar las bases de datos de forma local usando tecnologías como Kubernetes o Docker Compose, recomendamos crear  la infraestructura a la nube, en una plataforma como Oracle Cloud Infrastructure. Al utilizar recursos en la nube como instancias o máquinas virtuales, no es necesario contar con dispositivos locales poderosos o con mucho almacenamiento para los ejecutables o la base de datos.
+2. En lugar de implementar las bases de datos de forma local usando tecnologías como Kubernetes o Docker Compose, recomendamos crear  la infraestructura a la nube, en una plataforma como Oracle Cloud Infrastructure. Al utilizar recursos en la nube como instancias o máquinas virtuales, no es necesario contar con dispositivos locales poderosos o con mucho almacenamiento para los ejecutables o la base de datos.
 
-Siempre usar github y guardar versiones periódicamente, esto para evitar perder datos o recuperar código funcional en caso de que algún componente deje de funcionar.
+3. Siempre usar github y guardar versiones periódicamente, esto para evitar perder datos o recuperar código funcional en caso de que algún componente deje de funcionar.
 
-Para cualquier persona que quiera implementar Oracle Autonomous Database, recomendamos dedicarle tiempo a aprender la sintaxis y estructuras de PL/SQL. Inicialmente, nosotros tuvimos dificultades con este lenguaje, especialmente con tipos de datos como CLOB. y VARRAY.
+4. Para cualquier persona que quiera implementar Oracle Autonomous Database, recomendamos dedicarle tiempo a aprender la sintaxis y estructuras de PL/SQL. Inicialmente, nosotros tuvimos dificultades con este lenguaje, especialmente con tipos de datos como CLOB. y VARRAY.
 
-Estudiar ejemplos prácticos de PL/SQL y revisar documentación de referencia como la [guía oficial de Oracle](https://docs.oracle.com/en/database/oracle/oracle-database/19/lnpls/index.html) es de gran ayuda para dominar este lenguaje.
+5. Estudiar ejemplos prácticos de PL/SQL y revisar documentación de referencia como la [guía oficial de Oracle](https://docs.oracle.com/en/database/oracle/oracle-database/19/lnpls/index.html) es de gran ayuda para dominar este lenguaje.
 
-La comunicación entre el frontend y el backend puede resultar engorrosa en algunos casos. Específicamente, la integración entre React y Flask utilizando sus funciones nativas para HTTP requests puede volverse complicada.
+6. La comunicación entre el frontend y el backend puede resultar engorrosa en algunos casos. Específicamente, la integración entre React y Flask utilizando sus funciones nativas para HTTP requests puede volverse complicada.
 Para facilitar esta integración, recomendamos utilizar la biblioteca Axios de JavaScript. Para aprender sintaxis y uso, se puede hacer desde su [página oficial](https://axios-http.com/docs/intro).
 
-Para procesar los XML dumps de Wikipedia recomendamos usar **mwxml** y **mwparserfromhell**. Estas dos bibliotecas permiten obtener fácilmente la información de cada página dentro del dump, sin tener que lidiar directamente con la complejidad del XML o el wikitext.
+7. Para procesar los XML dumps de Wikipedia recomendamos usar **mwxml** y **mwparserfromhell**. Estas dos bibliotecas permiten obtener fácilmente la información de cada página dentro del dump, sin tener que lidiar directamente con la complejidad del XML o el wikitext.
 
-Se recomienda establecer una cuenta de Oracle para todo el equipo desde el inicio del proyecto. Todos los miembros del equipo deben conocer y utilizar estas credenciales compartidas. Esto evita inconsistencias y problemas de acceso más adelante.
+8. Se recomienda establecer una cuenta de Oracle para todo el equipo desde el inicio del proyecto. Todos los miembros del equipo deben conocer y utilizar estas credenciales compartidas. Esto evita inconsistencias y problemas de acceso más adelante.
 
-Distribuir claramente las responsabilidades de cada miembro del equipo. Asignar tareas específicas de desarrollo de base de datos, pruebas, documentación, etc. a diferentes personas. Tener claro quien se encarga de qué.
+9. Distribuir claramente las responsabilidades de cada miembro del equipo. Asignar tareas específicas de desarrollo de base de datos, pruebas, documentación, etc. a diferentes personas. Tener claro quien se encarga de qué.
 
-Recomendamos atomizar las funciones dentro de los componentes, descomponiéndolas en operaciones simples y con propósitos específicos. Evitar funciones muy complejas o que realicen múltiples tareas. Esto es para que luego si sucede algún error dentro de una función no sea tan confuso el proceso de debugging y se pueda entender el problema más fácilmente
+10. Recomendamos atomizar las funciones dentro de los componentes, descomponiéndolas en operaciones simples y con propósitos específicos. Evitar funciones muy complejas o que realicen múltiples tareas. Esto es para que luego si sucede algún error dentro de una función no sea tan confuso el proceso de debugging y se pueda entender el problema más fácilmente
 
-Desarrollar y probar componentes individuales del código sin Docker inicialmente. Una vez que cada módulo funcione correctamente de forma aislada, entonces proceder a dockerizar las aplicaciones.
+11. Desarrollar y probar componentes individuales del código sin Docker inicialmente. Una vez que cada módulo funcione correctamente de forma aislada, entonces proceder a dockerizar las aplicaciones.
 
 ## Conclusiones
 
@@ -305,9 +481,11 @@ Desarrollar y probar componentes individuales del código sin Docker inicialment
 
 La infraestructura de la base Mongo Atlas no se crea automáticamente, es decir,  el cluster, la base de datos y las colecciones junto con sus índices se generan manualmente y no por medio del terraform o una máquina virtual. Por lo tanto si se quisiera implementar esto con otro Cluster que el que está en el código sería necesario hacerlo manualmente y luego cambiar.
 
+## Referencias
+
 > Oracle database database PL/SQL language reference, 19c. (2019, enero 14). Oracle Help Center. https://docs.oracle.com/en/database/oracle/oracle-database/19/lnpls/index.html
 >
 >Getting Started | Axios Docs. (s.f.). Axios. https://axios-http.com/docs/intro
 >
->
+>Kurtovic, B. (n.d.). mwparserfromhell: A Python parser for MediaWiki wikicode [Computer software]. GitHub. https://github.com/earwig/mwparserfromhell
 >

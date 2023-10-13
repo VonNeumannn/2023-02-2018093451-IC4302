@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+
 import axios from 'axios'
 
 export default function DocumentComplete() {
@@ -18,7 +20,7 @@ export default function DocumentComplete() {
       
         useEffect(() => {
           const apiUrl =
-            "http://127.0.0.1:5000/document?titulo=" +
+            "http://127.0.0.1:5000/document?title=" +
             tituloCambiado +
             "&tipoRecurso=" +
             base;
@@ -69,9 +71,7 @@ function resaltarFrase(texto, frase) {
     }
 }
 
-  function convertFromWikiTextToHtml(wikiText) {
-    
-  }
+  
 
     function wikiToHtml(wikiText) {
         let htmlText = wikiText;
@@ -94,14 +94,15 @@ function resaltarFrase(texto, frase) {
         htmlText = htmlText.replace(/\[\[(.*?)\]\]/g, function(match, p1) {
             let parts = p1.split('|');
             if(parts.length == 2) {
-                return '<a href="' + parts[0] + '">' + parts[1] + '</a>';
+      
+                return '<Link to="' + parts[0] + '">' + parts[1] + '</Link>';
             } else {
-                return '<a href="' + parts[0] + '">' + parts[0] + '</a>';
+                return '<Link to="' + parts[0] + '">' + parts[0] + '</Link>';
             }
         });
     
         // Convertir enlaces externos
-        htmlText = htmlText.replace(/\[(http.*?) (.*?)\]/g, '<a href="$1">$2</a>');
+        htmlText = htmlText.replace(/\[(http.*?) (.*?)\]/g, '<a target="_blank"href="$1">$2</a>');
     
         // Convertir listas sin orden
         htmlText = htmlText.replace(/^(\*.*\n)+/gm, function(match) {
@@ -123,7 +124,7 @@ function resaltarFrase(texto, frase) {
             return '<pre>' + p1.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</pre>';
         });
 
-        htmlText = htmlText.replace(/[[File:(.*?)]]/g, '<img src="$1">');
+        htmlText = htmlText.replace(/[[File:(.*?)]]/g, "");
     
 
         return htmlText;
