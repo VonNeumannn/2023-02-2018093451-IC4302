@@ -51,7 +51,7 @@ export default function Search() {
       console.log("Valor seleccionado:", tipoDB);
 
       const apiUrl =
-        "http://127.0.0.1:5000/search?stringBusqueda=" +
+        "http://localhost:5000/search?stringBusqueda=" +
         search +
         "&tipoRecurso=" +
         tipoDB;
@@ -90,24 +90,7 @@ export default function Search() {
     }
   };
 
-  function dividirCadenaEn4Partes(cadena) {
-    if (cadena.length < 20) {
-      // La cadena es demasiado corta para dividirla en 4 partes
-      return [cadena];
-    }
-  
-    const longitud = Math.ceil(cadena.length / 20); // Calcular la longitud de cada parte
-    const partes = [];
-  
-    for (let i = 0; i < 20; i++) {
-      const inicio = i * longitud;
-      const fin = (i + 1) * longitud;
-      partes.push(cadena.substring(inicio, fin));
-    }
-  
-    return partes;
-  }
-  
+
 //////////////DOCUMENTS
   useEffect(() => {
     if (array.length > 0) {
