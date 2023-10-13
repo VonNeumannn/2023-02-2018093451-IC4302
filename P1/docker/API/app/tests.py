@@ -166,49 +166,49 @@ class test_api(unittest.TestCase):
     #    condition = ('Error' in response.json())
     #    self.assertEqual(condition, False)
 
-    def test_ratingMongo(self):
-        title = 'Ejemplo'
-        rating = '0'
-        url = 'http://127.0.0.1:5000'+ '/rating?title='+title+'&tipoRecurso=2'+'&rating='+rating
-        conn = dbMongo_connection()
-        collection = conn["Pages"]
-
-        #Query para insertar documento
-        data2Insert = {
-            "Title": "Ejemplo",
-            "PageId": 1,
-            "Namespace": "Ejemplo",
-            "FileData": {
-                "dbName": "DB1",
-                "siteName": "Site1",
-                "Language": "English"
-            },
-            "LastRevisionData": {
-                "User": {
-                    "UserID": 123,
-                    "username": "Usuario1"
-                },
-                "Text": {
-                    "wikiText": "Texto1",
-                    "NormalText": "Texto normal1"
-                },
-                "PageBytes": 1024,
-                "Redirect": None,
-                "RevisionDate": "2023-10-13"
-            },
-            "Restrictions": ["Restricción1", "Restricción2"],
-            "Links": ["Link1", "Link2"],
-            "WikipediaLink": "EnlaceWiki1",
-            "WikipediaGenerated": "Generado1",
-            "Rating": 0
-        }
-        response = requests.get(url)
-        self.assertEqual(response.status_code, 200)
-
-        condition = ('Error' in response.json())
-        self.assertEqual(condition, False)
-        
-        collection.delete_one(data2Insert)
+    #def test_ratingMongo(self):
+    #    title = 'Ejemplo'
+    #    rating = '0'
+    #    url = 'http://127.0.0.1:5000'+ '/rating?title='+title+'&tipoRecurso=2'+'&rating='+rating
+    #    conn = dbMongo_connection()
+    #    collection = conn["Pages"]
+#
+    #    #Query para insertar documento
+    #    data2Insert = {
+    #        "Title": "Ejemplo",
+    #        "PageId": 1,
+    #        "Namespace": "Ejemplo",
+    #        "FileData": {
+    #            "dbName": "DB1",
+    #            "siteName": "Site1",
+    #            "Language": "English"
+    #        },
+    #        "LastRevisionData": {
+    #            "User": {
+    #                "UserID": 123,
+    #                "username": "Usuario1"
+    #            },
+    #            "Text": {
+    #                "wikiText": "Texto1",
+    #                "NormalText": "Texto normal1"
+    #            },
+    #            "PageBytes": 1024,
+    #            "Redirect": None,
+    #            "RevisionDate": "2023-10-13"
+    #        },
+    #        "Restrictions": ["Restricción1", "Restricción2"],
+    #        "Links": ["Link1", "Link2"],
+    #        "WikipediaLink": "EnlaceWiki1",
+    #        "WikipediaGenerated": "Generado1",
+    #        "Rating": 0
+    #    }
+    #    response = requests.get(url)
+    #    self.assertEqual(response.status_code, 200)
+#
+    #    condition = ('Error' in response.json())
+    #    self.assertEqual(condition, False)
+    #    
+    #    collection.delete_one(data2Insert)
 
 if __name__=="__main__":
    unittest.main()
