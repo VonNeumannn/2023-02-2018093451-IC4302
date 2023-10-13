@@ -1,6 +1,6 @@
 import unittest
-import main
-from main import *
+import app as main
+from app import *
 
 
 class TestsBucket(unittest.TestCase):
