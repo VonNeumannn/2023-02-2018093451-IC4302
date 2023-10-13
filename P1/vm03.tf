@@ -37,6 +37,8 @@ resource "oci_core_instance" "vm03" {
     }
     preserve_boot_volume = false
 
+    depends_on = [oci_core_instance.vm01]
+
 }
 
 output "vm03_connect" {
