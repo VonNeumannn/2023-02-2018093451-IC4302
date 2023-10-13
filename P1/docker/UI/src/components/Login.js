@@ -37,7 +37,7 @@ export default function Login() {
         
         if (email.trim() != "" && password.trim() != "") {
 
-            const apiUrl = 'http://172.17.0.2:5000/login';
+            const apiUrl = 'http://127.0.0.1:5000/login';
 
             // Datos que deseas enviar en la solicitud POST
             const data = {

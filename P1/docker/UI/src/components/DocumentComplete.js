@@ -27,7 +27,7 @@ export default function DocumentComplete() {
           const modalInfo = document.getElementById("modal-info")
           modalInfo.classList.add('mostrando')
           const apiUrl =
-            "http://172.17.0.2:5000/document?title=" +
+            "http://127.0.0.1:5000/document?title=" +
             tituloCambiado +
             "&tipoRecurso=" +
             base;
