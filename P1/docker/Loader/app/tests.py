@@ -2,7 +2,7 @@ import unittest
 import app as main
 from app import *
 
-
+"""
 class TestsBucket(unittest.TestCase):
 
     # Se prueba si se puede conectar correctamente con el bucket en la base
@@ -50,7 +50,7 @@ class TestsBucket(unittest.TestCase):
             # El archivo descargado debe ser
             self.assertEqual(type(result2), str, "No se logro descargar el archivo")
 
-
+"""
 class TestsConectividad(unittest.TestCase):
 
     # Definimos un método de prueba para la conexión MongoDB
@@ -107,6 +107,7 @@ class TestsConectividad(unittest.TestCase):
 
         db.close()
 
+    """
     def test_oracle_connection(self):
         # Se crea una conexión con Autonomous SQL
         connS = dbOracle_connection()
@@ -133,7 +134,7 @@ class TestsConectividad(unittest.TestCase):
 
         # Se comprueba que ahora haya un archivo más
         self.assertEqual(len(files), initial_count + 1)
-
+    """
 
 class TestVerificarDondeArchivo(unittest.TestCase):
 

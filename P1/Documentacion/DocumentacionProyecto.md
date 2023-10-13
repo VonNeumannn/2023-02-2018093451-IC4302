@@ -372,13 +372,14 @@ Corriendo estas pruebas se obtiene:
 
 #### Aclaración
 
-Hubo algunos métodos en el código para el que no se hicieron unit tests ya que son una combinación de los métodos que si se probaron a través de las pruebas. Un ejemplo de esto es la función dataloader(), la cuál consiste de una combinacion de las funciones de conectar, obtener archivos y parsear.
+Hubo algunos métodos en el código para el que no se hicieron unit tests ya que son una combinación de los métodos que si se probaron a través de las pruebas. Además el resto de funciones que no se pudieron hacer Unittests son aquellas en las que se requiere conexión con la base de datos SQL, es decir, requieren que primero se genere la infrastructura SQL para correrlas, sin embargo, cuando se cree la imagen de docker con estos tests no se espera que esta exista aún.
 
-El resultado al correr todas las pruebas es:
+El resultado al correr todas las pruebas  en un escenario donde la base si este corriendo es:
 
 ![Alt text](image.png)
 
 Si bien se tiran advertencias, estas no afectan el desempeño o resultados de las pruebas y se pueden ignorar. Todas las pruebas son aprobadas cuando la base de datos esta corriendo.
+
 
 ---
 
