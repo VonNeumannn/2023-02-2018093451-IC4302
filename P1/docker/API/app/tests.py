@@ -12,7 +12,7 @@ rating = '0'
 title = 'Anarchism'
 
 class test_api(unittest.TestCase):
-    def test_Login(self):
+    def test_login(self):
         url = baseurl+'/login'
         credentials = {'email': email, 'password': password}
         response = requests.post(url,credentials)
@@ -21,7 +21,7 @@ class test_api(unittest.TestCase):
         condition = ('Error' in response.json())
         self.assertEqual(condition, False)
 
-    def test_Register(self):
+    def test_register(self):
         url = baseurl+'/register'
         data = { 'email': email,
                 'name': name,
@@ -34,7 +34,7 @@ class test_api(unittest.TestCase):
         condition = ('Error' in response.json())
         self.assertEqual(condition, False)
 
-    def test_SearchOracle(self):
+    def test_searchOracle(self):
         url = baseurl+ '/search?stringBusqueda='+busqueda+'&tipoRecurso=1'
 
         response = requests.get(url)
@@ -43,7 +43,7 @@ class test_api(unittest.TestCase):
         condition = ('Error' in response.json())
         self.assertEqual(condition, False)
 
-    def test_SearchMongo(self):
+    def test_searchMongo(self):
         url = baseurl+ '/search?stringBusqueda='+busqueda+'&tipoRecurso=2'
 
         response = requests.get(url)
@@ -52,7 +52,7 @@ class test_api(unittest.TestCase):
         condition = ('Error' in response.json())
         self.assertEqual(condition, False)
 
-    def test_DocumentOracle(self):
+    def test_documentOracle(self):
         url = baseurl+ '/document?title='+title+'&tipoRecurso=1'
 
         response = requests.get(url)
@@ -61,7 +61,7 @@ class test_api(unittest.TestCase):
         condition = ('Error' in response.json())
         self.assertEqual(condition, False)
 
-    def test_DocumentMongo(self):
+    def test_documentMongo(self):
         url = baseurl+ '/document?title='+title+'&tipoRecurso=2'
 
         response = requests.get(url)
@@ -70,7 +70,7 @@ class test_api(unittest.TestCase):
         condition = ('Error' in response.json())
         self.assertEqual(condition, False)
 
-    def test_Rating(self):
+    def test_rating(self):
         url = baseurl+ '/rating?title='+title+'&tipoRecurso=1'+'&rating='+rating
 
         response = requests.get(url)
@@ -79,7 +79,7 @@ class test_api(unittest.TestCase):
         condition = ('Error' in response.json())
         self.assertEqual(condition, False)
 
-    def test_Rating(self):
+    def test_rating(self):
         url = baseurl+ '/rating?title='+title+'&tipoRecurso=2'+'&rating='+rating
 
         response = requests.get(url)
