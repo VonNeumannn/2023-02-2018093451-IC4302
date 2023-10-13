@@ -19,7 +19,7 @@ from google.cloud.firestore_v1.base_query import FieldFilter
 #Constants
 app = Flask(__name__)
 # Configura CORS para toda la aplicación
-CORS(app)
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 #Oracle connection
 def dbOracle_connection():
@@ -199,7 +199,7 @@ def login():
             dbLogs(title,timeStamp)
             return e
 
-#Search by title
+#Search
 @app.route("/search", methods=['GET'])
 def search():
     #Se obtienen los parametros
@@ -556,7 +556,7 @@ def rateDoc():
     #Log data
     date_time = datetime.now()
     timeStamp = date_time.strftime("%Y-%m-%dT%H:%M:%S")
-    title = "   "
+    title = ""
 
     if (int(tipoRecurso) == 1):
         conn = dbOracle_connection()
