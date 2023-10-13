@@ -64,9 +64,11 @@
         - [test\_get\_links()](#test_get_links)
       - [Aclaración](#aclaración)
     - [API](#api)
-    - [Manual de Instalación / Ejecución](#manual-de-instalación--ejecución)
-      - [Ejecución](#ejecución)
-      - [UI](#ui)
+        - [Componentes:](#componentes)
+    - [**Enpoints:**](#enpoints)
+        - [Pruebas realizadas (UnitTests)](#pruebas-realizadas-unittests-1)
+    - [Manual de Usuario](#manual-de-usuario)
+    - [UI](#ui)
   - [Primer pantalla](#primer-pantalla)
   - [Pantalla de registro](#pantalla-de-registro)
   - [Pantalla Buscar](#pantalla-buscar)
@@ -383,48 +385,141 @@ Si bien se tiran advertencias, estas no afectan el desempeño o resultados de la
 
 ---
 
-#### API
+### API
 
 La API se completó en un en un 90% la parte no implementada es la de los facets, estos si se obtienen cuando se realiza la búsqueda con mongo.
 
 ##### Componentes:
 CORS(app): Cross-origin resource sharing, es un mecanismo que permite que se puedan solicitar recursos restringidos. Esto nos ayuda para poder enviar y solicitar datos desde la API y la UI
 Funciones:
-**dbOracle_connection():** Con este método nos conectamos a la base de datos de oracle mediante un user, password y un string que contiene los datos de conexión.
-**dbMongo_connection():** Método para conectar con la base de datos de mongo, mediante el string que nos da mongo.
-**dbLogs(title, timeStamp):** Esta función se encarga de insertar logs en una tabla NoSQL, con un mensaje y la hora de la consulta.
-**firebaseConnection():** Función para conectarse a firebase y retorna la conexión.
-**Enpoints:**
+
+- **dbOracle_connection():** Con este método nos conectamos a la base de datos de oracle mediante un user, password y un string que contiene los datos de conexión.
+
+![Alt text](<imgs/Imagen de WhatsApp 2023-10-13 a las 04.06.42_325ace7f.jpg>)
+
+- **dbMongo_connection():** Método para conectar con la base de datos de mongo, mediante el string que nos da mongo.
+
+![Alt text](<imgs/Imagen de WhatsApp 2023-10-13 a las 04.07.06_705463e5.jpg>)
+
+- **dbLogs(title, timeStamp):** Esta función se encarga de insertar logs en una tabla NoSQL, con un mensaje y la hora de la consulta.
+
+![Alt text](<imgs/Imagen de WhatsApp 2023-10-13 a las 04.07.39_f3bdbc53.jpg>)
+
+- **firebaseConnection():** Función para conectarse a firebase y retorna la conexión.
+
+![Alt text](<imgs/Imagen de WhatsApp 2023-10-13 a las 04.08.20_f4d77fe7.jpg>)
+
+### **Enpoints:**
+
 **/register:** Es un post que pasa los datos necesarios en tipo json para registrarse en firebase y retorna un mensaje indicando que el registro fue exitoso.
-Imagen
+
+![Alt text](<imgs/Imagen de WhatsApp 2023-10-13 a las 04.08.52_6ae28e8a.jpg>)
+
 **/login:** Este es un post que recibe un email y contraseña, con esto se busca si existe en firebase en caso de ser así entonces comprueba si la contraseña es correcta y devuelta un mensaje de login exitoso.
-IMAGNE
-**/search:** En este endpoint GET se tienen parámetros en la URL,  stringBusqueda, este es el que contiene el string que queremos buscar. tipoRecurso, contiene en cuál base de datos queremos buscar(1 para autonomous, 2 para mongo), luego de que se extraen los parámetros se comprueba el tipo de BD, si es autonomous, se define una consulta SQL(se adjunta imagen de la consulta), esta consulta hace un SELECT para obtener el título y los datos que ocupamos, gracias a los índices creados podemos usar la instrucción CONTAINS de oracle sql, inmediatamente después se ejecuta la consulta y se guardan los datos para ser retornados en formato JSON, y realizar su respectiva inserción a la tabla de logs. Al final cierra la conexión.
-Imagen
+
+![Alt text](<imgs/Imagen de WhatsApp 2023-10-13 a las 04.09.36_ffdb8148.jpg>)
+
+**/search:** En este endpoint GET se tienen parámetros en la URL,  stringBusqueda, este es el que contiene el string que queremos buscar. tipoRecurso, contiene en cuál base de datos queremos buscar(1 para autonomous, 2 para mongo), luego de que se extraen los parámetros se comprueba el tipo de BD, si es autonomous, se define una consulta SQL, esta consulta hace un SELECT para obtener el título y los datos que ocupamos, gracias a los índices creados podemos usar la instrucción CONTAINS de oracle sql, inmediatamente después se ejecuta la consulta y se guardan los datos para ser retornados en formato JSON, y realizar su respectiva inserción a la tabla de logs. Al final cierra la conexión.
+
+![Alt text](<imgs/Imagen de WhatsApp 2023-10-13 a las 04.11.10_db49d2bb.jpg>)
+
 Cuando la base es Mongo Atlas se obtiene el stringBusqueda, se llama a la función para conectarse a mongo, y se define la colección con la que vamos a trabajar, luego se define la consulta para usar con el método aggregate() de mongo, la consulta contiene las siguientes partes: primero, seleccionamos el índice creado de los campos donde vamos a buscar, luego definimos las rutas donde vamos a buscar así como la palabra que queremos buscar, además de utilizar la funcionalidad que tiene mongo para realizar highlight de los resultados, por último definimos los datos que queremos que muestre la consulta.
 La segunda consulta define los los buckets(como los tags de cada facet) y límites(rangos) que va a tener cada facet, además de esto obtenemos los facets con su bucket, específicamente para la búsqueda. Luego de esto utilizamos la función aggregate() para agregar en un stage en mongo, luego se retorna el los resultados de la búsqueda y los facets correspondientes.
-Imagen
+
+![Alt text](<imgs/Imagen de WhatsApp 2023-10-13 a las 04.11.38_32c3252a.jpg>)
+
 **/document:** Es un GET obtenemos los parámetros title, tipoRecurso. Si es autonomousDB, definimos una consulta sql para obtener el documento buscando por title, se ejecuta esta consulta la cual devuelve el Texto limpio de, el link a wikipedia y el Rating, luego retorna el documento con formato json. Además de insertar en la tabla logs.
-Imagen
+
+![Alt text](<Imagen de WhatsApp 2023-10-13 a las 04.12.07_29d480a7.jpg>)
+
 En caso de mongo atlas, primero encuentra según el title recibido como parámetro, luego obtiene el texto normalizado, seguido del link a wikipedia así como el rating actual de la página. Si encuentra el documento lo retorna como un tipo json, si no muestra un mensaje de error e inserta en la tabla de logs.
-imagen 
+
+![Alt text](<Imagen de WhatsApp 2023-10-13 a las 04.12.28_bbf9c493.jpg>)
+
 **/rating:** Este endpoint va a realizar un GET que tiene como parametros, title, tipoRecurso, rating. Si es autonomous entonces realiza una consulta sql que actualiza el campo rating de la tabla Page, para sumar o restar uno dependiendo del contenido de rating, luego retorna un mensaje si la tabla se actualizó.
-imagen
+
 Para mongo atlas, realiza un update en la colección según el título para hacer un incremento o decremento del rating, y lanza un mensaje.
-imagen
+
+![Alt text](<Imagen de WhatsApp 2023-10-13 a las 04.13.00_22785211.jpg>)
+
 ##### Pruebas realizadas (UnitTests)
+
 Para cada prueba se construye una url con el endpoint necesario además de agregarle los parámetros necesarios. 
+
 **test_login:** Realiza la comprobación de que se realiza el login correctamente, toma los datos dados al principio. Es una consulta del tipo POST
+
 **test_register:** Ingresa datos de prueba para comprobar que se realizó el registro correctamente.
+
 **test_searchOracle:** Busca en la base de datos autonomous, definimos lo que queremos buscar al principio del programa.
+
 **test_searchMongo:** Busca en mongo atlas, con los datos que definimos.
-**test_documentOracle:** Con esto se prueba que se encuentre el documento con el título seleccionado en la base de datos autonomous.
+
+**test_documentOracle:** Con esto se prueba que se encuentre el documento con el título 
+seleccionado en la base de datos autonomous.
+
 **test_documentMongo:** Se muestra el documento con el título seleccionado según el título.
+
 **test_ratingOracle:** Se prueba que la actualización del rating en autonomous sea correcta.
+
 **test_ratingMongo:** Se prueba que la actualización del rating en mongo sea correcta.
 
+---
+### Manual de Usuario
 
-#### UI
+A continuación se presentan las instrucciones para ejecutar nuestro programa desde 0. Lo primero será descargar el folder y colocarlo descomprimido en alguna carpeta que sea de comodidad para acceso en el futuro.
+
+Ahora desde una terminal de linux en la herramienta que se desee se navega a la carpeta de P1 para el folder del proyecto. En el caso de esta guía utilizamos visual studio, pero en caso de errores a la hora de manejar las ssh recomendamos utilizar `MobaXTerm` para la terminal.
+
+Para abrir la terminal en la carpeta se puede hacer click derecho en la carpeta y se selecciona la opción de abrir con Visual Studio o MobaXTerm. También se puede navegar usando el comando Cd para llegar a la dirección deseada. Es muy importante que si se hace a punta de CD recordar que las direcciones deben contener /mnt/d/ al inicio debido a que estamos trabajando con un sistema linux.
+
+Una vez en la terminal se verá lo siguiente:
+
+![Alt text](imgs/terminal.png)
+
+En esta terminal se van a poder ejecutar distintos comandos dependiendo de lo que se desee, este código esta hecho para correr imagenes de docker ya pre fabricadas por el equipo, sin embargo, si se cambiara algo y se quieren subir las imagenes alteradas se debe:
+
+Cambiar el archivo DockerImages.sh que se encuentra en la carpeta de automatización dentro de P1.
+En específico se debe cambiar el nombre del usuario por aquel con el que se hizo login y en el que se quieren subir las imágenes. Ej:
+
+![Alt text](imgs/man.png)
+
+![Alt text](imgs/1222.png)
+
+Todos esos nombres se deben cambiar por el nombre correcto del usuario de docker.
+
+Una vez hecho esto se debe buscar la carpeta llamada templates y ahi dentro habrán tres archivos que se llamarán vm#.sh Para cada uno de estos archivos se usa una imagen de docker, aqui también será necesario cambiar el nombre por el nuevo deseado.
+
+Ahora, una vez estan configuradas lás imagenes de docker y ya estan listos los scripts para las máquinas virtuales se vana a ejecutar los siguientes comandos:
+
+`cd automatizacion`
+
+Si se quieren crear las imágenes (Opcional):
+
+`dos2unix dockerImages.sh`
+`./dockerImages.sh`
+
+Luego se pasa a crear la verdadera infrastructura para el proyecto, para esto en el mismo folder simplemente se ejecuta lo siguiente:
+
+`dos2unix terraform.sh`
+`./terraform.sh`
+
+Hecho esto al usuario le debería aparecer lo siguiente:
+
+![Alt text](imgs/seguro.png)
+
+Esto es una lista de lo que se va a realizar junto con cambios y demás aspectos, si el usuario quiere proceder debe escribir la palabra `yes`. Una vez hecho esto es cuestión de esperar que el comando termine de ejecutar.
+
+
+Una vez ejecutado, la infrastructura en la cuenta de Oracle Cloud Infrastructre se creo. Del lado del usuario esta cuenta es innaccesible, sin embargo es importante recalcar que los administradores de la base de datos cada cierto tiempo o de acuerdo a solicitudes del profesor van a ingresar a la página de Wikidumps, buscar un archivo comprimido de tipo bz2 con un nombre similar a:  **enwiki-latest-pages-articles-multistream*.xml-p\*p\*.bz**
+
+Una vez los administradores suben este documento el componente loader en el fondo comienza a procesarlo y a subir archivos a las bases de datos. Después ya los datos conforme son procesados el cliente los puede ver en el UI.
+
+Para conectar con el UI
+
+#Ustedes explican lo del ssh y como conectar de la página
+
+
+### UI
 
 ## Primer pantalla
 
@@ -514,6 +609,12 @@ Para mostrar esta pantalla usaremos la palabra "Anarchism", la pantalla se mostr
 
 ## Final
 
+Finalmente, si se quisiera borrar la infrastructura, en la misma terminal que se han ejecutado los comandos pasados. Se va a la carpeta de automatización y se ejecutan los siguientes comandos:
+
+`dos2unix destroy.sh`
+
+`./destroy.sh`
+
 Esta sería la guía para el uso de la página WikiSearch. Cualquier error o inconveniente, favor comunicarlo a cualquiera de los correos:
 
 - [joctan@estudiantec.cr](mailto:joctan@estudiantec.cr)
@@ -547,31 +648,33 @@ Para facilitar esta integración, recomendamos utilizar la biblioteca Axios de J
 
 ## Conclusiones
 
-- Oracle Db, a pesar de ser una herramienta muy sólida para cloud computing, no es la más sencilla de comprender para principiantes, especialmente en aspectos como la implementación de protocolos de seguridad, el manejo de llaves y restricciones de IP, entre otros. Es necesario tener en cuenta muchos factores para usarla correctamente. Sobre todo cuando se trata de interactuar con la base de datos y su particular lenguaje SQL, ya que en este lenguaje hay tipos especiales como CLOB, VARRAY, etc.
+1. Oracle Db, a pesar de ser una herramienta muy sólida para cloud computing, no es la más sencilla de comprender para principiantes, especialmente en aspectos como la implementación de protocolos de seguridad, el manejo de llaves y restricciones de IP, entre otros. Es necesario tener en cuenta muchos factores para usarla correctamente. Sobre todo cuando se trata de interactuar con la base de datos y su particular lenguaje SQL, ya que en este lenguaje hay tipos especiales como CLOB, VARRAY, etc.
 
-- Para crear la infraestructura de una base de datos o sistema, Terraform es una herramienta sumamente útil. La provisión automática de bases de datos a través de OCI y Terraform convirtió un proceso complejo, donde cada estructura como la DB, los buckets, las instancias, etc. eran creadas manualmente, en algo simple y rápido. Esto nos permitió desplegar instancias rápidamente sin tener que administrar toda la infraestructura.
+2. Para crear la infraestructura de una base de datos o sistema, Terraform es una herramienta sumamente útil. La provisión automática de bases de datos a través de OCI y Terraform convirtió un proceso complejo, donde cada estructura como la DB, los buckets, las instancias, etc. eran creadas manualmente, en algo simple y rápido. Esto nos permitió desplegar instancias rápidamente sin tener que administrar toda la infraestructura.
 
-- Durante la ejecución del proyecto aprendimos que los buckets de Oracle Cloud Infrastructure son sumamente útiles y versátiles para el almacenamiento y acceso a archivos en la nube. Esto ya que permiten cargar fácilmente documentos de todo tipo y descargarlos cuando sea necesario desde cualquier dispositivo o aplicación, evitando tener que almacenar localmente grandes volúmenes de datos.
+3. Durante la ejecución del proyecto aprendimos que los buckets de Oracle Cloud Infrastructure son sumamente útiles y versátiles para el almacenamiento y acceso a archivos en la nube. Esto ya que permiten cargar fácilmente documentos de todo tipo y descargarlos cuando sea necesario desde cualquier dispositivo o aplicación, evitando tener que almacenar localmente grandes volúmenes de datos.
 
-- Es importante comunicarse entre las partes de UI, API y Loader debido a que se deben establecer estándares en los datos que se van a recibir/enviar para poder trabajar de forma descentralizada y no ser tan dependientes, sin embargo, con algún cambio que surja en el formato se debe comunicar a las partes involucradas para hacer las correcciones necesarias y poder tener todo a tiempo.
+4. Es importante comunicarse entre las partes de UI, API y Loader debido a que se deben establecer estándares en los datos que se van a recibir/enviar para poder trabajar de forma descentralizada y no ser tan dependientes, sin embargo, con algún cambio que surja en el formato se debe comunicar a las partes involucradas para hacer las correcciones necesarias y poder tener todo a tiempo.
 
-- Tener datos de prueba, dummies o tontos hace más sencillo y rápido el desarrollo del UI debido a que se tiene una base de donde partir para poder hacer las funciones y todo lo necesario para recibir los datos una vez que ya están los reales.
+5. Tener datos de prueba, dummies o tontos hace más sencillo y rápido el desarrollo del UI debido a que se tiene una base de donde partir para poder hacer las funciones y todo lo necesario para recibir los datos una vez que ya están los reales.
 
-- Algunas bases de datos hacen que las tareas de crear, obtener, modificar datos, y obtener conexiones a las bases de datos sean más sencillas, por ejemplo Mongo Atlas, Firebase facilitan las conexiones ya que tienen código generado para varios lenguajes. Además sus estructuras son mucho más intuitivas al ser NoSQL. Caso contrario con Autonomous DB.
+6. Algunas bases de datos hacen que las tareas de crear, obtener, modificar datos, y obtener conexiones a las bases de datos sean más sencillas, por ejemplo Mongo Atlas, Firebase facilitan las conexiones ya que tienen código generado para varios lenguajes. Además sus estructuras son mucho más intuitivas al ser NoSQL. Caso contrario con Autonomous DB.
 
-- Las máquinas virtuales en la nube son herramientas increíblemente poderosas en comparación con soluciones locales como Docker. Anteriormente, utilizamos Docker y almacenamos todos los datos localmente, lo cual resultaba muy pesado y consumía grandes cantidades de recursos en nuestros dispositivos. Ahora con VMs se resolvieron estos problemas al permitirnos crear entornos aislados y escalables bajo demanda
+7. Las máquinas virtuales en la nube son herramientas increíblemente poderosas en comparación con soluciones locales como Docker. Anteriormente, utilizamos Docker y almacenamos todos los datos localmente, lo cual resultaba muy pesado y consumía grandes cantidades de recursos en nuestros dispositivos. Ahora con VMs se resolvieron estos problemas al permitirnos crear entornos aislados y escalables bajo demanda
 
-- MongoDB Atlas es una base de datos sumamente potente implementa funciones realmente útiles como los highlights, facets, entre otras cosas que nos gustaria investigar en el futuro.
+8. MongoDB Atlas es una base de datos sumamente potente implementa funciones realmente útiles como los highlights, facets, entre otras cosas que nos gustaria investigar en el futuro.
 
-- Las bases de datos NoSQL como lo es Mongo Atlas, resultan sumamente intuitivas para el desarrollo, ya que no tenemos toda la complejidad que posee el tratar de entender un modelo y todas las relaciones entre tablas que tienen las bases de datos SQL.
+9. Las bases de datos NoSQL como lo es Mongo Atlas, resultan sumamente intuitivas para el desarrollo, ya que no tenemos toda la complejidad que posee el tratar de entender un modelo y todas las relaciones entre tablas que tienen las bases de datos SQL.
 
-- El manejo de datos mediante JSON resulta muy fácil de usar para mover datos de BD hasta el API y luego a la UI, al ser estandarizado, en todas las tecnologías que se usaron en el proyecto fue muy sencillo de manejar y todas tenian soporte para el archivo.
+10. El manejo de datos mediante JSON resulta muy fácil de usar para mover datos de BD hasta el API y luego a la UI, al ser estandarizado, en todas las tecnologías que se usaron en el proyecto fue muy sencillo de manejar y todas tenian soporte para el archivo.
 
 ## Información Importante y Consideraciones
 
 [//]: # (PONER AQUI COSAS DE SUS COMPONENTES QUE NO SIRVEN O CONSIDERACIONES IMPORTANTES PARA EJECUTAR EL PROYECTO)
 
-La infraestructura de la base Mongo Atlas no se crea automáticamente, es decir,  el cluster, la base de datos y las colecciones junto con sus índices se generan manualmente y no por medio del terraform o una máquina virtual. Por lo tanto si se quisiera implementar esto con otro Cluster que el que está en el código sería necesario hacerlo manualmente y luego cambiar.
+La infraestructura de la base Mongo Atlas no se crea automáticamente, es decir,  el cluster, la base de datos y las colecciones junto con sus índices se generan manualmente y no por medio del terraform o una máquina virtual. Por lo tanto si se quisiera implementar esto con un Cluster distinto al actual, en el código sería necesario hacerlo manualmente y luego cambiar.
+
+
 
 ## Referencias
 
@@ -581,3 +684,5 @@ La infraestructura de la base Mongo Atlas no se crea automáticamente, es decir,
 >
 >Kurtovic, B. (n.d.). mwparserfromhell: A Python parser for MediaWiki wikicode [Computer software]. GitHub. https://github.com/earwig/mwparserfromhell
 >
+>The Tor Project, Inc. (n.d.). API Reference — mwparserfromhell 0.6.4 documentation. Mwparserfromhell.ReadtheDocs.Io. Retrieved February 23, 2023, from https://mwparserfromhell.readthedocs.io/en/latest/api/mwparserfromhell.html#id1
+
