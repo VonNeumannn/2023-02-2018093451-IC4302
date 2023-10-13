@@ -25,7 +25,7 @@ export default function Register() {
     mensajeError4.textContent = ""
 
     // Agrega un controlador de eventos para el evento 'input' (cada vez que se escriba algo en el campo)
-    const apiUrl = "http://127.0.0.1:5000/register";
+    const apiUrl = "http://172.17.0.2:5000/register";
 
     // Datos que deseas enviar en la solicitud POST
     if (inputNombre.trim() != ""

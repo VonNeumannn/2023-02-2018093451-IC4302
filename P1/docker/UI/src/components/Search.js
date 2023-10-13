@@ -51,7 +51,7 @@ export default function Search() {
       console.log("Valor seleccionado:", tipoDB);
 
       const apiUrl =
-        "http://127.0.0.1:5000/search?stringBusqueda=" +
+        "http://172.17.0.2:5000/search?stringBusqueda=" +
         search +
         "&tipoRecurso=" +
         tipoDB;
