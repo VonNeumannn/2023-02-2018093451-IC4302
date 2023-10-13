@@ -16,7 +16,6 @@ from firebase_admin import firestore
 from google.cloud.firestore_v1.base_query import FieldFilter
 
 
-
 #Constants
 app = Flask(__name__)
 # Configura CORS para toda la aplicación
@@ -471,7 +470,6 @@ def showDocument():
     #Obtiene los parametros
     titleDoc = request.args.get('title')
     tipoRecurso = request.args.get('tipoRecurso')
-    rating = int(request.args.get('like'))
     #logs
     date_time = datetime.now()
     timeStamp = date_time.strftime("%Y-%m-%dT%H:%M:%S")
@@ -483,18 +481,14 @@ def showDocument():
         cursor = conn.cursor()
         #Request
         try:
-            sql = f"""SELECT LR."RevisionWikiText",
-                            P."WikipediaLink"
+            sql = f"""SELECT LR."RevisionCleanText",
+                            P."WikipediaLink",
                             P."Rating"
                         FROM ADMIN."Page" P
                         INNER JOIN ADMIN."LastRevision" LR
                         ON LR."PageId" = P."Pageid"
                         WHERE P."Title" = '{titleDoc}'
                         """
-            updateRating = f"""UPDATE "ADMIN"."Page"
-                                SET "Rating" = NVL("Rating", 0) + {rating}
-                                WHERE "Page"."Title" = '{titleDoc}'
-                                """
             cursor.execute(sql)
             rows = cursor.fetchall()
             document = []
@@ -506,10 +500,6 @@ def showDocument():
                 'rating': r[2]
                 }
                 document.append(result_dict)
-            # Si el rating es distinto de 0, se actualiza el rating
-            if rating != 0:
-                cursor.execute(updateRating)
-                conn.commit()
             # Si el documento existe, devuelvo un json con el documento
             if document is not None:
                 title = "Search exitoso"
@@ -545,17 +535,13 @@ def showDocument():
             }
             results = collection.find_one({"Title":titleDoc})
             #results = list(collection.find(queryOne))
-            wikiText = results.get("LastRevisionData", {}).get("Text", {}).get("wikiText")
+            wikiText = results.get("LastRevisionData", {}).get("Text", {}).get("NormalText")
             wikiLink = results.get("WikipediaLink")
             ratings = results.get("Rating")
 
             jsonWiki = {"wikiText":wikiText,
                         "wikiLink":wikiLink,
                         "rating":ratings}
-            # Si el rating es distinto de 0, se actualiza el rating
-            if rating != 0:
-                collection.updateOne({ "Title": "Anarchism" }, { "$inc": { "Rating": + rating } })
-                conn.commit()
             # Si el documento existe, devuelvo un json con el documento    
             if wikiText is not None:
                 title = "Muestra el documento"
@@ -569,7 +555,54 @@ def showDocument():
             title = f"Error: {str(e)}"
             dbLogs(title,timeStamp)
             return(f"Error: {str(e)}")
+        
+@app.route("/rating", methods=['GET'])
+def rateDoc():
+    #Obtiene los parametros
+    titleDoc = request.args.get('title')
+    tipoRecurso = request.args.get('tipoRecurso')
+    rating = int(request.args.get('rating'))
+    #Log data
+    date_time = datetime.now()
+    timeStamp = date_time.strftime("%Y-%m-%dT%H:%M:%S")
+    title = ""
 
+    if (int(tipoRecurso) == 1):
+        conn = dbOracle_connection()
+        cursor = conn.cursor()
+        try:
+            updateRating = f"""UPDATE "ADMIN"."Page"
+                                SET "Rating" = NVL("Rating", 0) + {rating}
+                                WHERE "Page"."Title" = '{titleDoc}'
+                                """
+            # Si el rating es distinto de 0, se actualiza el rating
+            if rating != 0:
+                cursor.execute(updateRating)
+                conn.commit()
+                title = f"Rate: {titleDoc} +- {rating} "
+                dbLogs(title,timeStamp)
+                return "Rating actualizado", 200
+            else:
+                return "Rating no actualizado", 200
+        except Exception as e:
+            return(f"Error: {str(e)}")
+        finally:
+            conn.close()
+    else:
+        conn = dbMongo_connection()
+        collection = conn["Pages"]
+        try:
+            # Si el rating es distinto de 0, se actualiza el rating
+            if rating != 0:
+                collection.updateOne({ "Title": titleDoc }, { "$inc": { "Rating": + rating } })
+                conn.commit()
+                title = f"Rate: {titleDoc} +- {rating} "
+                dbLogs(title,timeStamp)
+                return "Rating actualizado", 200
+            else:
+                return "Rating no actualizado", 200
+        except Exception as e:
+            return(f"Error: {str(e)}")
 # Main
 if __name__ == '__main__':
     app.run()

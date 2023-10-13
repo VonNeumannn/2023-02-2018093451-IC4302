@@ -20,6 +20,8 @@
 ---
 La presente es la documentación del proyecto 1 , que consistió en desarrollar un sistema para desplegar y procesar páginas de wikipedia a través de los Wikidumps XML. En este documento se detalla la funcionalidad de los componentes implementados, las pruebas unitarias realizadas, el manual de usuario para operar el sistema, y las conclusiones y recomendaciones para mejoras futuras. El objetivo es proporcionar una visión integral de la solución desarrollada y sus capacidades
 
+---
+
 ## Infraestructura Propuesta para las Bases Utilizadas
 
 ### Autonomous Database
@@ -107,8 +109,11 @@ Este método inserta los datos del sitio que aparece en un archivo específico d
 
 [//]: # (Poner una Imagen del Mapping en Mongo, Porfa alguien que explique esto, <== ayuden a este pobre hombre José)
 
+----
+
 ## Componentes del Proyecto
 
+----
 ### Object Storage
 
 Para el componente Object Storage las indicaciones del proyecto dicen que se deben de subir 3 archivos para cada procesamiento de las páginas en el loader, estos son:
@@ -139,6 +144,8 @@ Para esto nos basamos en los ejemplos de la documentación de Mwparser fromhell 
 
 Por lo tanto para el funcionamiento correcto de todo el programa, solamente es necesario descargar el archivo comprimido  enwiki-latest-pages-articlesmultistream. para las páginas que se quieran procesar y se sube directamente al bucket, sin tener que descomprimir o subir otros archivos.
 
+---
+
 ### DataLoader
 
 Este componente está 100% funcional de acuerdo con lo solicitado en el proyecto, el código esta 100% documentado y se hicieron los UnitTests respectivos.
@@ -166,13 +173,160 @@ La siguiente linea se presenta en la función `process_file` en la siguiente sec
 
 Se puede definir cont == (la cantidad que uno desee de articulos a procesar)
 
-Este código va a estar comentado en el documento que se va a subir, entonces para habilitarlo, antes de habilitar la infrastuctura se puede quitar los hashtags a la izquierda e ingresar el número que se quiera procesar. Esta función es compl
-
-[//]: # (Incluir que se puede setear una cantidad específica de archivos a procesar y enseñar el código)
-
+Este código va a estar comentado en el documento que se va a subir, entonces para habilitarlo, antes de habilitar la infrastuctura se puede quitar los hashtags a la izquierda e ingresar el número que se quiera procesar. Esta función es completamente opcional
 ### Pruebas realizadas (UnitTests)
 
-#### API
+
+#### Para los Unit Tests del Loader se realizaron 
+
+Primero se probaron las funciones del Loader para conectar con el bucket de OCI, obtener los archivos en el bucket, descargar uno de estos archivos y descomprimirlo
+
+Estos Unit Tests son los siguientes:
+
+![Unit Tests1](imgs/TestsBucket.png)
+
+
+##### test_connect_bucket()
+
+En el primer test se verifica si es posible establecer una conexción con el bucket de autonomous usando la configuración alambrada desde el main. Se indica que se espera obtener un cliente de Object Storage. Luego se compara el tipo de dato que regresa la función de conexión con el cliente.
+
+Si el tipo de dato que regresa la función es un cliente y no es None se pasa el test
+
+##### test_getFiles()
+
+En este test, una vez se probo la conexión al bucket, se prueba obteniendo todos los archivos que existen dentro del el. Si el resultado obtenido de esta operación es una lista se considera completo el test.
+
+No se reviso si el tipo de dato adentro eran archivos realmente porque puede estar vacio el bucket.
+
+##### test_get_bucket_file()
+
+Este experimento prueba obteniendo los nombres de todos los objetos en el bucket, debido a que ocupa los dos métodos anteriores se prueba hasta que se pasaron los tests de los dos anteriores.
+
+Este método prueba estableciendo una conexión con el bucket, obteniendo la lista de archivos y en base a esto pueden pasar dos escenarios:
+
+1. Si hay datos en el bucket se prueba descargando el promer archivo de esos datos y que si se descargue correctamente
+2. Si no hay datos en el bucket no se prueba descargar y simplemente se pasa el test
+
+
+Para pasar el test se debe revisar que se regrese el nombre del archivo descargado o que se ignore en caso de ser vacío.
+
+
+Probando estos 3 métodos sobre las funciones del Loader:
+
+![Alt text](imgs/unittestresult1.png)
+
+--- 
+Luego se probaron métodos para probar si los métodos de conexión e inserción en las bases de datos funcionaban correctamente:
+
+##### Pruebas para Mongo
+
+![Alt text](imgs/testConnMongo.png)
+
+
+Para Mongo se hacen dos pruebas:
+
+##### test_MongodbConn()
+
+Este test se asegura que el método para conectar con Mongo Atlas sea completamente funcional, obtiene la conexión y se asegura que el método no regrese None.
+
+Luego revisa que en la conexión a Mongo exista la base de datos Wikipedia dentro del cluster al que se conecto. Esto es esencial ya que sin base de datos los inserts no van a servir.
+
+Si se logra se considera que se paso el test.
+##### test_MongoGet()
+
+Este método prueba obteniendo los nombres de los archivos que se han registrado en la base MongoDb. Es una operación de tipo GET, lo que se espera es verificar si el método regresa una lista ya sea vacía o con nombres de archivos. Si no regresa una lista no esta funcionando adecuadamente.
+
+Luego de probar el Get se prueba insertando un dato nuevo a la colección y luego volviendo a llamar al metodo de get para verificar si realmente se agrego un archivo nuevo. Una vez se verifica que si se agrego se elimina el dato de prueba y se considera el test completado.
+
+---
+
+##### Pruebas para Autonomous SQL
+
+Al igual que con mongo, en Autonomous se probaron los métodos del loader para conectar e insertar datos dentro de la base. Estos tests fueron:
+
+![Alt text](imgs/PruebaconnSQL.png)
+
+
+##### test_oracle_connection()
+Esta prueba verifica si se puede establecer conexión con Oracle Cloud Infrastructre y entrar a la base Autonomous.
+
+El método es exitoso si la conexión es distinta de None. Despúes de verificar esto el test se considera completado.
+
+##### test_oracleGet()
+
+Esta prueba, similar a la de Mongo, se conecta a la base de datos y obtiene los nombres de todos los archivos que hasta el momento han sido procesados. Para que esta parte sea exitosa el método debe de regresar un objeto de tipo lista, ya sea vacía o con componentes.
+
+Una vez hecho esto se prueba el método para ingresar un archivo a la base de datos y se verifica que al obtener nuevamente la lista de archivos se haya agregado uno.
+
+Si esto es exitoso se considera la prueba como terminada.
+
+
+Los resultados al ejecutar estas pruebas son:
+
+![Alt text](imgs/testsconn.png)
+
+
+---
+
+Después se prueba la función para comparar las listas de archivos en cada base y verificar si coinciden con los archivos que están almacenados en el bucket. Si en el bucket hay un archivo que no sale en alguna de las bases se procede a retornar el nombre del archivo y la base donde se desea ingresar.
+
+
+![Alt text](imgs/VerificarArchivosFaltantes.png)
+
+Para este método, se hacen distintas pruebas una donde SQL no tenga el archivo, una donde Mongo no tenga el archivo, una donde ambos no lo tengan y una donde ambos si lo tengan. 
+
+* Cuando SQL no tiene el archivo se espera recibir el nombre y el string 'SQL'
+
+* Cuando Mongo no tiene el archivo se espera recibir el nombre y el string 'MONGO'
+
+* Cuando ninguna lo tiene se regresa el nombre y se espera el string 'AMBOS'
+
+* Cuando ambos tienen el archivo se espera obtener de output None
+
+Una vez que se comprueban todos los casos exitosamente se considera el unittest como completado
+
+El resultado de este test es:
+
+![Alt text](imgs/resultverify.png)
+
+---
+Finalmente, se prueban las funciones para parsear wikitext y obtener links
+
+![Alt text](imgs/TestParser.png)
+
+
+##### test_parse_text()
+
+Esta función contiene un wikitext de ejemplo y texto limpio, este texto limpio representa el output esperado después de parsear el wikitext para quitarle todos los elementos adicionales.
+
+El test funciona si al parsear el wikitext si se obtiene el texto esperado. Una vez revisado esto se considera el test como completado
+
+##### test_get_links()
+
+Similar a la pasada, esta función tiene un wikitext ejemplo que contiene lins, también se tiene una lista con los links que se espera que el método get_lins regrese en base a ese texto. 
+
+Si los links obtenidos al ejecutar el método son iguales a los links esperados, se considera completado el Unittest
+
+
+Corriendo estas pruebas se obtiene:
+
+![Alt text](imgs/testsparserresult.png)
+
+---
+
+#### Aclaración
+
+Hubo algunos métodos en el código para el que no se hicieron unit tests ya que son una combinación de los métodos que si se probaron a través de las pruebas. Un ejemplo de esto es la función dataloader(), la cuál consiste de una combinacion de las funciones de conectar, obtener archivos y parsear. 
+
+El resultado al correr todas las pruebas es:
+
+![Alt text](image.png)
+
+Si bien se tiran advertencias, estas no afectan el desempeño o resultados de las pruebas y se pueden ignorar.
+
+
+---
+### API
 
 [//]: # (Breve explicación, aclaraciones, explicar cada una de las direcciones  Documentación de los endpoints de Mongo Atlas utilizados, se debe apoyar con ejemplos de su código Pruebas realizadas UnitTests)
 
