@@ -444,24 +444,52 @@ Para mongo atlas, realiza un update en la colección según el título para hace
 
 ##### Pruebas realizadas (UnitTests)
 
-Para cada prueba se construye una url con el endpoint necesario además de agregarle los parámetros necesarios. 
+Para cada prueba se construye una url con el endpoint necesario además de agregarle los parámetros necesarios. Las pruebas para autonomous no son posibles porque la infraestructura se crea después de los unitests
 
 **test_login:** Realiza la comprobación de que se realiza el login correctamente, toma los datos dados al principio. Es una consulta del tipo POST
 
+![Alt text](image-3.png)
+
 **test_register:** Ingresa datos de prueba para comprobar que se realizó el registro correctamente.
 
-**test_searchOracle:** Busca en la base de datos autonomous, definimos lo que queremos buscar al principio del programa.
+![Alt text](image-4.png)
+
+**test_searchOracle:** 
+
+![Alt text](image-5.png)Busca en la base de datos autonomous, definimos lo que queremos buscar al principio del programa.
 
 **test_searchMongo:** Busca en mongo atlas, con los datos que definimos.
+
+![Alt text](image-2.png)
+
+Resultado
+
+![Alt text](image-1.png)
 
 **test_documentOracle:** Con esto se prueba que se encuentre el documento con el título 
 seleccionado en la base de datos autonomous.
 
+![Alt text](image-6.png)
+
 **test_documentMongo:** Se muestra el documento con el título seleccionado según el título.
+
+![Alt text](image-7.png)
+
+Resultado
+
+![Alt text](image-8.png)
 
 **test_ratingOracle:** Se prueba que la actualización del rating en autonomous sea correcta.
 
+![Alt text](image-9.png)
+
 **test_ratingMongo:** Se prueba que la actualización del rating en mongo sea correcta.
+
+![Alt text](image-10.png)
+
+Resultados
+
+![Alt text](image-11.png)
 
 ---
 ### Manual de Usuario
@@ -516,7 +544,7 @@ Una vez los administradores suben este documento el componente loader en el fond
 
 Para conectar con el UI
 
-Una vez el terraform apply se haya ejecutado, nos dará una dirección ip para poder conectarnos por SSH, esta misma dirección la usamos para llamar a la UI mediante la dirección: dirección:8080/. Ya con esto tendremos accesso, a las funcionalidades.
+Una vez el terraform apply se haya ejecutado, nos dará una dirección ip para poder conectarnos por SSH, esta misma dirección la usamos para llamar a la UI mediante la dirección: <dirección>:8080/. Ya con esto tendremos accesso, a las funcionalidades.
 
 
 ### UI
