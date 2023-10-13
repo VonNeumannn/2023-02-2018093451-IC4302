@@ -27,7 +27,7 @@ export default function DocumentComplete() {
           const modalInfo = document.getElementById("modal-info")
           modalInfo.classList.add('mostrando')
           const apiUrl =
-            "http://172.17.0.2:5000/document?title=" +
+            "http://localhost:5000/document?title=" +
             tituloCambiado +
             "&tipoRecurso=" +
             base;
@@ -87,6 +87,34 @@ function resaltarFrase(texto, frase) {
     function OnClickRatings(rating){
       const counter = document.getElementById("counter")
       counter.innerHTML = parseInt(counter.innerHTML) + rating
+      const apiUrl =
+            "http://localhost:5000/rating?title=" +
+            tituloCambiado +
+            "&tipoRecurso=" +
+            base + "&rating=" + rating;
+      
+          // Realizar la solicitud POST dentro del useEffect
+          axios
+            .get(apiUrl)
+            .then((response) => {
+              if (response.status) {
+                setJson(response.data);
+                console.log(response);
+              } else {
+                alert("Error en la solicitud");
+              }
+            })
+            .catch((error) => {
+              // Manejar errores de la solicitud
+              console.error("Error en la solicitud:", error);
+            })
+            .finally(() => {
+              // Indicar que la carga ha finalizado
+              setLoading(false);
+            });
+
+
+
     }
 
 
