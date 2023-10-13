@@ -3,36 +3,39 @@ import requests
 import os
 
 baseurl = 'http://127.0.0.1:5000/'
-phrase = 'another'
-artist = 'beyonce'
-language = 'es'
-genre = 'Pop'
-minPop = '0'
-maxPop = '100'
-amountOfSongs = '10'
-songName = 'robot.html'
+email = 'joctan@estudiantec.cr'
+name = 'Joctan'
+lastname = 'Porras'
+password = '12345'
+busqueda = 'car'
+rating = '0'
+title = 'Anarchism'
 
 class test_api(unittest.TestCase):
-    def testLogin(self):
+    def test_Login(self):
         url = baseurl+'/login'
-
-        response = requests.post(url)
+        credentials = {'email': email, 'password': password}
+        response = requests.post(url,credentials)
         self.assertEqual(response.status_code, 200)
 
         condition = ('Error' in response.json())
         self.assertEqual(condition, False)
 
-    def testRegister(self):
+    def test_Register(self):
         url = baseurl+'/register'
-
-        response = requests.post(url)
+        data = { 'email': email,
+                'name': name,
+                'lastname': lastname,
+                'password': password
+                }
+        response = requests.post(url,data)
         self.assertEqual(response.status_code, 200)
 
         condition = ('Error' in response.json())
         self.assertEqual(condition, False)
 
-    def testSearchOracle(self):
-        url = baseurl+ '/search?'
+    def test_SearchOracle(self):
+        url = baseurl+ '/search?stringBusqueda='+busqueda+'&tipoRecurso=1'
 
         response = requests.get(url)
         self.assertEqual(response.status_code, 200)
@@ -40,8 +43,8 @@ class test_api(unittest.TestCase):
         condition = ('Error' in response.json())
         self.assertEqual(condition, False)
 
-    def testSearchMongo(self):
-        url = baseurl+ '/search?'
+    def test_SearchMongo(self):
+        url = baseurl+ '/search?stringBusqueda='+busqueda+'&tipoRecurso=2'
 
         response = requests.get(url)
         self.assertEqual(response.status_code, 200)
@@ -49,8 +52,8 @@ class test_api(unittest.TestCase):
         condition = ('Error' in response.json())
         self.assertEqual(condition, False)
 
-    def testDocumentOracle(self):
-        url = baseurl+ '/document?'
+    def test_DocumentOracle(self):
+        url = baseurl+ '/document?title='+title+'&tipoRecurso=1'
 
         response = requests.get(url)
         self.assertEqual(response.status_code, 200)
@@ -58,8 +61,8 @@ class test_api(unittest.TestCase):
         condition = ('Error' in response.json())
         self.assertEqual(condition, False)
 
-    def testDocumentMongo(self):
-        url = baseurl+ '/document'
+    def test_DocumentMongo(self):
+        url = baseurl+ '/document?title='+title+'&tipoRecurso=2'
 
         response = requests.get(url)
         self.assertEqual(response.status_code, 200)
@@ -67,7 +70,23 @@ class test_api(unittest.TestCase):
         condition = ('Error' in response.json())
         self.assertEqual(condition, False)
 
+    def test_Rating(self):
+        url = baseurl+ '/rating?title='+title+'&tipoRecurso=1'+'&rating='+rating
 
+        response = requests.get(url)
+        self.assertEqual(response.status_code, 200)
 
+        condition = ('Error' in response.json())
+        self.assertEqual(condition, False)
+
+    def test_Rating(self):
+        url = baseurl+ '/rating?title='+title+'&tipoRecurso=2'+'&rating='+rating
+
+        response = requests.get(url)
+        self.assertEqual(response.status_code, 200)
+
+        condition = ('Error' in response.json())
+        self.assertEqual(condition, False)
+        
 if __name__=="__main__":
    unittest.main()
