@@ -6,6 +6,14 @@ DROP TABLE "Link";
 DROP TABLE "Restriction";
 DROP TABLE "Site";
 DROP TABLE "File";
+--DROP INDEX IDX_REVISIONCLEANTEXT;
+--DROP INDEX IDX_REDIRECT;
+--DROP INDEX IDX_NAMESPACE;
+--DROP INDEX IDX_WIKIPEDIALINK;
+--DROP INDEX IDX_TITLE;
+--DROP INDEX IDX_WIKIPEDIAGENERATED;
+--DROP INDEX IDX_SITENAME;
+--DROP INDEX IDX_LANGUAGE;
 
 CREATE TABLE "File" (
 "Fileid" INT PRIMARY KEY,
@@ -20,6 +28,8 @@ FOREIGN KEY ("Fileid") REFERENCES "File"("Fileid"),
 "siteName" VARCHAR2(500),
 "Language" VARCHAR2(25)
 );
+CREATE INDEX idx_siteName ON "ADMIN"."Site" ("siteName") INDEXTYPE IS CTXSYS.CONTEXT;
+CREATE INDEX idx_Language ON "ADMIN"."Site" ("Language") INDEXTYPE IS CTXSYS.CONTEXT;
 
 CREATE TABLE "Restriction" (
 "RestrictionId" INT PRIMARY KEY,
@@ -41,6 +51,10 @@ FOREIGN KEY ("Siteid") REFERENCES "Site"("Siteid"),
 "WikipediaGenerated" VARCHAR2(200),
 "Rating" INT DEFAULT 0
 );
+CREATE INDEX idx_Namespace ON "ADMIN"."Page" ("Namespace") INDEXTYPE IS CTXSYS.CONTEXT;
+CREATE INDEX idx_WikipediaLink ON "ADMIN"."Page" ("WikipediaLink") INDEXTYPE IS CTXSYS.CONTEXT;
+CREATE INDEX idx_Title ON "ADMIN"."Page" ("Title") INDEXTYPE IS CTXSYS.CONTEXT;
+CREATE INDEX idx_WikipediaGenerated ON "ADMIN"."Page" ("WikipediaGenerated") INDEXTYPE IS CTXSYS.CONTEXT;
 
 CREATE TABLE "LastRevision" (
 "Revision_id" INT PRIMARY KEY,
@@ -53,6 +67,9 @@ CREATE TABLE "LastRevision" (
 "PageId" INT,
 FOREIGN KEY ("PageId") REFERENCES "Page"("Pageid")
 );
+
+CREATE INDEX idx_Redirect ON "ADMIN"."LastRevision" ("Redirect") INDEXTYPE IS CTXSYS.CONTEXT;
+CREATE INDEX idx_RevisionCleanText ON "ADMIN"."LastRevision"("RevisionCleanText") INDEXTYPE IS CTXSYS.CONTEXT;
 
 CREATE TABLE "PageXRestrictions" (
 "PageXRestrictions_id" INT PRIMARY KEY,

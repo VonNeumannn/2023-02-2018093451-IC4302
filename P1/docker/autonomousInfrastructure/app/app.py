@@ -16,7 +16,7 @@ conn = dbOracle_connection()
 cursor = conn.cursor()
 
 # Crear Estructura
-lista_estructura = ['modeloSQL/ModeloOracle.sql','modeloSQL/IndexOracle.sql']
+lista_estructura = ['modeloSQL/ModeloOracle.sql']
 for archivo in lista_estructura:
   f = open(archivo)
   full_sql = f.read()

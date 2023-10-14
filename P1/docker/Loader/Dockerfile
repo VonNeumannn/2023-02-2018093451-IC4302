@@ -12,7 +12,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 RUN ls
 
 # Correr Unittests Primero
-#RUN python -u tests.py
+RUN python -u tests.py
 
 # Run app.py cuando se probaron los métodos y se inicia el contenedor 
 CMD [ "python", "-u", "app.py" ]

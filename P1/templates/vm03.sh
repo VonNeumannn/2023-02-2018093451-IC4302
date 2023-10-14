@@ -20,5 +20,5 @@ apt-get update -y
 apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin -y
 
 
-sudo docker run -d -p 5000:5000 --name flask-api vonneumannn/api-wikidb
-sudo docker run -d -p 8080:80 --name webpage vonneumannn/docker-react
+sudo docker run -d -p 5000:5000 --name flask-api jcardonar/api-wikidb
+sudo docker run -d -p 8080:80 --name webpage jcardonar/docker-react

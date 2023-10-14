@@ -4,7 +4,6 @@ import os
 import app
 from app import *
 
-
 class test_api(unittest.TestCase):
     def setUp(self):
         app.app_context().push()
@@ -20,7 +19,7 @@ class test_api(unittest.TestCase):
 
     def test_mongoConnection(self):
         # Llamada a la función de conexión
-        conn = dbMongo_connection()
+        conn = app.dbMongo_connection()
         # Si se conecta
         self.assertIsNotNone(conn, "Conexión exitosa")
         
@@ -62,7 +61,7 @@ class test_api(unittest.TestCase):
     def test_searchMongo(self):
         busqueda = 'Ejemplo'
         url = 'http://127.0.0.1:5000'+ '/search?stringBusqueda='+busqueda+'&tipoRecurso=2'
-        conn = dbMongo_connection()
+        conn = app.dbMongo_connection()
         collection = conn["Pages"]
         
         data2Insert = {
@@ -114,7 +113,7 @@ class test_api(unittest.TestCase):
     def test_documentMongo(self):
         title = 'Ejemplo'
         url = 'http://127.0.0.1:5000'+ '/document?title='+title+'&tipoRecurso=2'
-        conn = dbMongo_connection()
+        conn = app.dbMongo_connection()
         collection = conn["Pages"]
         
         data2Insert = {
