@@ -15,7 +15,7 @@ resource "oci_core_instance" "vm02" {
     availability_domain = data.oci_identity_availability_domains.ads.availability_domains[0].name
     compartment_id = var.compartment_id
     display_name = "vm02"
-    shape = "VM.Standard3.Flex"
+    shape = "VM.Standard.E2.1.Micro"
     shape_config {
         memory_in_gbs = "4"
         ocpus         = "1"
